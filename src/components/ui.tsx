@@ -269,10 +269,9 @@ export function ConfirmDelete({ onConfirm, title = 'Delete' }: { onConfirm: () =
   }
   return (
     <IconButton
-      name="Plus"
+      name="Trash2"
       title={title}
-      size={13}
-      className="rotate-45"
+      size={14}
       onClick={() => {
         setArmed(true)
         if (timer.current) clearTimeout(timer.current)

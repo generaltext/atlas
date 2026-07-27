@@ -4,9 +4,13 @@
    gt.theme); standalone/dev falls back to the OS via the same class. */
 
 html,
-body,
-#root {
+body {
   height: 100%;
+}
+/* min-height (not height) so content taller than the viewport extends the page and
+   the WINDOW scrolls — the sticky header + sticky project list depend on this. */
+#root {
+  min-height: 100%;
 }
 
 /* Tailwind v4 preflight defaults every border to currentColor. Default to the
@@ -41,10 +45,15 @@ body {
   --accent: #1c5a7a;
   --accent-soft: #dce8ee;
   --brass: #9c7a33;
+  --marine-dim: #5e8aa1;
+  --shadow: 0 1px 2px rgba(23, 42, 51, 0.05), 0 8px 24px rgba(23, 42, 51, 0.06);
   --good: #2e7d5b;
   --warn: #c0791e;
   --info: #1c5a7a;
   --crit: #b0413e;
+  --st-teal: #178a80;
+  --st-sky: #2e77a8;
+  --st-violet: #7a5ea8;
   --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
 }
@@ -61,10 +70,15 @@ body {
   --accent: #58a8ce;
   --accent-soft: #14303c;
   --brass: #d2a860;
+  --marine-dim: #3d6d84;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 10px 30px rgba(0, 0, 0, 0.35);
   --good: #4fb088;
   --warn: #e0a94e;
   --info: #58a8ce;
   --crit: #e07b78;
+  --st-teal: #46beb2;
+  --st-sky: #66aeda;
+  --st-violet: #b49be0;
 }
 
 .font-mono-x {
@@ -197,6 +211,27 @@ body {
     transform: scale(3.2);
     opacity: 0;
   }
+}
+
+/* ── @mention chips (rendered + contenteditable) ───────────────────────────── */
+.mention {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 4px;
+  padding: 0 3px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+.mention:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+/* contenteditable placeholder */
+[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--faint);
+  pointer-events: none;
 }
 
 button {

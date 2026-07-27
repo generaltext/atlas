@@ -1,23 +1,17 @@
 import type { ReactNode } from 'react'
-import { type Config, statusLabel, statusTone, type Tone } from '../lib/model'
+import { type Config, statusColorVarName, statusLabel } from '../lib/model'
 import { Icon } from './Icon'
 
-export function toneClass(tone: Tone): string {
-  return `tone-${tone}`
-}
-
-export function Pill({ tone, children }: { tone: Tone; children: ReactNode }) {
-  return (
-    <span className={`pill ${toneClass(tone)}`}>
-      <span className="tick" />
-      {children}
-    </span>
-  )
-}
-
+/** A status chip: the `.pill` background is a wash of its (inline) color, so any
+ *  configured status color works without a per-color CSS class. */
 export function StatusPill({ statusKey, config }: { statusKey: string; config: Config }) {
   if (!statusKey) return null
-  return <Pill tone={statusTone(statusKey, config)}>{statusLabel(statusKey)}</Pill>
+  return (
+    <span className="pill" style={{ color: `var(${statusColorVarName(config, statusKey)})` }}>
+      <span className="tick" />
+      {statusLabel(config, statusKey)}
+    </span>
+  )
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {

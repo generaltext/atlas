@@ -1,18 +1,26 @@
 import { Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import { entitiesOfKind, fieldStr, refName } from '../lib/reducer'
-import { KINDS, statusLabel, type EntityKind } from '../lib/model'
-import { formatMoney } from '../lib/format'
+import { entitiesOfKind, fieldStr, projectsForClient } from '../lib/reducer'
+import { KINDS, type EntityKind } from '../lib/model'
 import { Icon } from '../components/Icon'
 import { EmptyState } from '../components/common'
 import { Button } from '../components/ui'
 import { useCreate } from '../components/useCreate'
 
-export function EntityListPage({ kind }: { kind: EntityKind }) {
+export function EntityListPage({ kind }: { kind: Exclude<EntityKind, 'project'> }) {
   const { state } = useStore()
   const create = useCreate()
   const def = KINDS[kind]
   const rows = entitiesOfKind(state, kind)
+
+  const secondary = (id: string): string => {
+    if (kind === 'client') {
+      const n = projectsForClient(state, id).length
+      return `${n} ${n === 1 ? 'project' : 'projects'}`
+    }
+    const rec = state.entities[id]
+    return [fieldStr(rec, 'role'), fieldStr(rec, 'email')].filter(Boolean).join(' · ')
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -34,19 +42,11 @@ export function EntityListPage({ kind }: { kind: EntityKind }) {
       ) : (
         <div className="rowlist">
           {rows.map((r) => (
-            <Link
-              key={r.id}
-              to={`/e/${r.id}`}
-              className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--hover)]"
-            >
+            <Link key={r.id} to={`/e/${r.id}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--hover)]">
               <Icon name={def.icon} size={16} className="shrink-0 text-[var(--faint)]" />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[14.5px] font-semibold">
-                  {fieldStr(r, 'name') || fieldStr(r, 'title') || 'Untitled'}
-                </div>
-                <div className="truncate text-[12.5px] text-[var(--muted)]">
-                  {secondary(kind, r, state)}
-                </div>
+                <div className="truncate text-[14.5px] font-semibold">{fieldStr(r, 'name') || 'Untitled'}</div>
+                <div className="truncate text-[12.5px] text-[var(--muted)]">{secondary(r.id)}</div>
               </div>
             </Link>
           ))}
@@ -54,23 +54,4 @@ export function EntityListPage({ kind }: { kind: EntityKind }) {
       )}
     </div>
   )
-}
-
-function secondary(
-  kind: EntityKind,
-  r: import('../lib/reducer').EntityRecord,
-  state: import('../lib/reducer').State,
-): string {
-  if (kind === 'client') return [fieldStr(r, 'location'), fieldStr(r, 'website')].filter(Boolean).join(' · ')
-  if (kind === 'contact')
-    return [fieldStr(r, 'role'), refName(state, fieldStr(r, 'client'))].filter(Boolean).join(' · ')
-  if (kind === 'contract')
-    return [
-      refName(state, fieldStr(r, 'client')),
-      formatMoney(fieldStr(r, 'value')),
-      statusLabel(fieldStr(r, 'status')),
-    ]
-      .filter(Boolean)
-      .join(' · ')
-  return ''
 }

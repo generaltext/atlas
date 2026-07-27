@@ -1,16 +1,20 @@
+import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useStore } from './lib/store'
 import { Layout } from './components/Layout'
 import { AppSkeleton } from './components/Skeleton'
-import { Dashboard } from './routes/Dashboard'
-import { ProjectsList } from './routes/ProjectsList'
+import { ProjectsLayout } from './routes/ProjectsLayout'
 import { ProjectDetail } from './routes/ProjectDetail'
-import { ClientReport } from './routes/ClientReport'
 import { EntityListPage } from './routes/EntityListPage'
 import { EntityDetail } from './routes/EntityDetail'
-import { LineagePage } from './routes/LineagePage'
-import { Suggestions } from './routes/Suggestions'
-import { ActivityFeed } from './routes/ActivityFeed'
+import { GraphPage } from './routes/GraphPage'
+import { SettingsPage } from './routes/SettingsPage'
+import { AtlasMark } from './components/AtlasMark'
+
+/** Centered single-column page body for the non-Projects tabs. */
+function Page({ children }: { children: ReactNode }) {
+  return <div className="mx-auto max-w-3xl px-5 py-7 sm:px-8">{children}</div>
+}
 
 export function App() {
   const { ready } = useStore()
@@ -19,20 +23,28 @@ export function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<ProjectsList />} />
-        <Route path="/p/:id" element={<ProjectDetail />} />
-        <Route path="/p/:id/report" element={<ClientReport />} />
-        <Route path="/clients" element={<EntityListPage kind="client" />} />
-        <Route path="/contacts" element={<EntityListPage kind="contact" />} />
-        <Route path="/contracts" element={<EntityListPage kind="contract" />} />
-        <Route path="/e/:id" element={<EntityDetail />} />
-        <Route path="/lineage" element={<LineagePage />} />
-        <Route path="/inbox" element={<Suggestions />} />
-        <Route path="/activity" element={<ActivityFeed />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Projects tab: list + detail side by side in the body */}
+        <Route element={<ProjectsLayout />}>
+          <Route index element={<Home />} />
+          <Route path="/p/:id" element={<ProjectDetail />} />
+        </Route>
+        {/* other tabs: ordinary single-column pages */}
+        <Route path="/graph" element={<Page><GraphPage /></Page>} />
+        <Route path="/clients" element={<Page><EntityListPage kind="client" /></Page>} />
+        <Route path="/contacts" element={<Page><EntityListPage kind="contact" /></Page>} />
+        <Route path="/e/:id" element={<Page><EntityDetail /></Page>} />
+        <Route path="/settings" element={<Page><SettingsPage /></Page>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+  )
+}
+
+function Home() {
+  return (
+    <div className="flex min-h-[55vh] flex-col items-center justify-center text-center text-[var(--faint)]">
+      <AtlasMark size={30} className="mb-3" />
+      <p className="text-[15px]">Pick a project from the list, or add one with the + above.</p>
+    </div>
   )
 }

@@ -1,69 +1,49 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { pendingSuggestions } from '../lib/reducer'
-import { Icon } from './Icon'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { AtlasMark } from './AtlasMark'
 
-const NAV: { to: string; label: string; icon: string }[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-  { to: '/projects', label: 'Projects', icon: 'FolderGit2' },
-  { to: '/lineage', label: 'Lineage', icon: 'Waypoints' },
-  { to: '/inbox', label: 'Suggestions', icon: 'Milestone' },
-  { to: '/clients', label: 'Clients', icon: 'Building2' },
-  { to: '/contacts', label: 'Contacts', icon: 'Users' },
-  { to: '/contracts', label: 'Contracts', icon: 'FileText' },
-  { to: '/activity', label: 'Activity', icon: 'Activity' },
-]
+const pill = (active: boolean) =>
+  `rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition ${
+    active
+      ? 'bg-[var(--panel)] text-[var(--fg)] shadow-sm'
+      : 'text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--fg)]'
+  }`
 
 export function Layout() {
-  const { connected, state } = useStore()
-  const pendingCount = pendingSuggestions(state).length
+  const { pathname } = useLocation()
+  // "Projects" owns both the list (/) and a selected project (/p/:id).
+  const projectsActive = pathname === '/' || pathname.startsWith('/p/')
+
   return (
-    <div className="flex h-full flex-col bg-[var(--bg)] text-[var(--fg)] sm:flex-row">
-      <aside className="flex shrink-0 flex-col border-b border-[var(--border)] bg-[var(--panel-2)] sm:w-56 sm:border-b-0 sm:border-r">
-        <div className="flex items-center gap-2.5 px-4 py-3.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--fg)] text-[var(--bg)]">
-            <Icon name="Waypoints" size={17} />
+    <div className="flex min-h-screen flex-col bg-[var(--bg)] text-[var(--fg)]">
+      <header className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] px-4 backdrop-blur sm:px-6">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--fg)] text-[var(--bg)]">
+            <AtlasMark size={16} />
           </div>
-          <div className="leading-tight">
-            <div className="text-[15px] font-semibold">Atlas</div>
-            <div className="font-mono-x text-[10.5px] text-[var(--faint)]">General Text</div>
-          </div>
-        </div>
-        <nav className="flex gap-1 overflow-x-auto px-2 pb-2 sm:flex-col sm:overflow-visible sm:pb-0">
-          {NAV.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-[13.5px] font-medium transition ${
-                  isActive
-                    ? 'bg-[var(--panel)] text-[var(--fg)] shadow-sm'
-                    : 'text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--fg)]'
-                }`
-              }
-            >
-              <Icon name={n.icon} size={16} />
-              {n.label}
-              {n.to === '/inbox' && pendingCount > 0 && (
-                <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-[var(--brass)] px-1.5 font-mono-x text-[10px] font-semibold text-white">
-                  {pendingCount}
-                </span>
-              )}
-            </NavLink>
-          ))}
+          <span className="text-[14.5px] font-semibold">Atlas</span>
+        </Link>
+
+        <nav className="ml-3 flex items-center gap-1">
+          <Link to="/" className={pill(projectsActive)}>
+            Projects
+          </Link>
+          <NavLink to="/graph" className={({ isActive }) => pill(isActive)}>
+            Graph
+          </NavLink>
+          <NavLink to="/clients" className={({ isActive }) => pill(isActive)}>
+            Clients
+          </NavLink>
+          <NavLink to="/contacts" className={({ isActive }) => pill(isActive)}>
+            Contacts
+          </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => pill(isActive)}>
+            Settings
+          </NavLink>
         </nav>
-        <div className="mt-auto hidden items-center gap-2 px-4 py-3 font-mono-x text-[11px] text-[var(--faint)] sm:flex">
-          <span
-            className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ background: connected ? 'var(--good)' : 'var(--faint)' }}
-          />
-          {connected ? 'synced' : 'offline'}
-        </div>
-      </aside>
-      <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl px-5 py-6 sm:px-8 sm:py-8">
-          <Outlet />
-        </div>
+      </header>
+
+      <main className="flex-1">
+        <Outlet />
       </main>
     </div>
   )

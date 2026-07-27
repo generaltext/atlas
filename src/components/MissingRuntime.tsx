@@ -1,13 +1,13 @@
-import { Icon } from './Icon'
+import { AtlasMark } from './AtlasMark'
 
 // Shown when the app is opened standalone (deployed site, no General Text shell).
 // Offers a local in-browser demo workspace.
 export function MissingRuntime({ onTryDemo }: { onTryDemo: () => void }) {
   return (
-    <div className="flex h-full items-center justify-center bg-[var(--bg)] px-6">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6">
       <div className="max-w-md text-center">
         <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--fg)] text-[var(--bg)]">
-          <Icon name="Waypoints" size={26} />
+          <AtlasMark size={28} />
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">Atlas</h1>
         <p className="mx-auto mt-2 max-w-sm text-[15px] leading-relaxed text-[var(--muted)]">

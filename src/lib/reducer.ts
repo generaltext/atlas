@@ -2,19 +2,19 @@
 // idempotent (each event id applied at most once) so re-folding a shard tail, or
 // seeing our own optimistic write echoed back by the watch, is always safe.
 //
-// Field conflicts resolve last-writer-wins by log order; on a full rebuild the
-// log is applied in file order, and appends are monotonic, so later events
-// overwrite earlier ones.
+// The lineage graph is NOT stored: it is derived from @mentions in each project's
+// `context` field (see graphEdges / mentionsOf / mentionedBy at the bottom).
 
 import type { Actor, AtlasEvent } from './events'
-import type { EntityKind, ItemStatus, MilestoneStatus } from './model'
+import type { EntityKind, MilestoneStatus, LogSource, DeliverableKind } from './model'
 import { kindOfId } from './model'
+import { mentionedIds } from './mentions'
 
 export interface EntityRecord {
   id: string
   kind: EntityKind
   fields: Record<string, string | number>
-  tags: string[]
+  /** bidirectional links (project ↔ contact) */
   links: string[]
   archived: boolean
   createdBy: Actor | null
@@ -31,13 +31,17 @@ interface ChildBase {
   updatedAt: string
 }
 
+/** A deliverable — a link, to begin with (label + url), optionally checked off. */
 export interface Deliverable extends ChildBase {
   id: string
   projectId: string
   label: string
-  status: ItemStatus
-  due: string
-  clientVisible: boolean
+  url: string
+  kind: DeliverableKind
+  /** optional due date (ISO) — meaningful when kind === 'due' */
+  dueDate: string
+  /** delivery date (ISO) — set when kind === 'delivered' */
+  deliveredDate: string
   order: number
 }
 
@@ -48,69 +52,24 @@ export interface Milestone extends ChildBase {
   label: string
   desc: string
   status: MilestoneStatus
-  clientVisible: boolean
   order: number
 }
 
-export interface Resource extends ChildBase {
-  id: string
-  projectId: string
-  label: string
-  url: string
-  type: string
-  note: string
-  clientVisible: boolean
-}
-
-export interface LineageEdge extends ChildBase {
-  id: string
-  from: string
-  to: string
-  kind: string
-  note: string
-  clientVisible: boolean
-}
-
+/** An update-log entry — added manually or pushed by an agent reading commits. */
 export interface LogEntry extends ChildBase {
   id: string
   projectId: string
+  at: string
   title: string
   body: string
-  source: 'agent' | 'human'
-  commits: number
-  repo: string
-  hash: string
-  at: string
-  clientVisible: boolean
-}
-
-/** A proposed change (usually from the ingest agent) awaiting human approval.
- *  The default path is manual entry; suggestions are additive and gated. */
-export interface Suggestion extends ChildBase {
-  id: string
-  /** project this concerns, or '' if not project-scoped */
-  projectId: string
-  /** human-readable label, e.g. "New update-log entry" */
-  op: string
-  /** the event type to dispatch when approved, e.g. 'log.create' */
-  draftType: string
-  /** target record id, or '' to mint one on approve (creates) */
-  draftSubject: string
-  draftData: Record<string, unknown>
-  rationale: string
-  source: 'agent' | 'human'
-  status: 'pending' | 'approved' | 'dismissed'
-  at: string
+  source: LogSource
 }
 
 export interface State {
   entities: Record<string, EntityRecord>
   deliverables: Record<string, Deliverable>
   milestones: Record<string, Milestone>
-  resources: Record<string, Resource>
-  lineage: Record<string, LineageEdge>
   logEntries: Record<string, LogEntry>
-  suggestions: Record<string, Suggestion>
   /** every applied event, in application order, for the activity feed */
   events: AtlasEvent[]
   applied: Set<string>
@@ -121,10 +80,7 @@ export function emptyState(): State {
     entities: {},
     deliverables: {},
     milestones: {},
-    resources: {},
-    lineage: {},
     logEntries: {},
-    suggestions: {},
     events: [],
     applied: new Set(),
   }
@@ -156,7 +112,6 @@ export function applyEvent(state: State, ev: AtlasEvent): void {
     case 'project':
     case 'client':
     case 'contact':
-    case 'contract':
       applyEntity(state, ev, verb, data)
       break
     case 'deliverable':
@@ -165,24 +120,15 @@ export function applyEvent(state: State, ev: AtlasEvent): void {
     case 'milestone':
       applyMilestone(state, ev, verb, data)
       break
-    case 'resource':
-      applyResource(state, ev, verb, data)
-      break
     case 'log':
       applyLog(state, ev, verb, data)
-      break
-    case 'lineage':
-      applyLineage(state, ev, verb, data)
-      break
-    case 'suggestion':
-      applySuggestion(state, ev, verb, data)
       break
     case 'link':
       applyLink(state, ev, verb, data)
       break
     default:
-      // Unknown event type from a newer build: recorded in events (activity),
-      // otherwise ignored. Forward-compatible by design.
+      // Unknown event type from a newer build: recorded in events, otherwise
+      // ignored. Forward-compatible by design.
       break
   }
 }
@@ -217,7 +163,6 @@ function applyEntity(
       id: ev.subject,
       kind,
       fields: fieldsFrom(data),
-      tags: [],
       links: [],
       archived: false,
       createdBy: ev.actor,
@@ -243,7 +188,16 @@ function applyEntity(
   }
 }
 
-// ── deliverables ──────────────────────────────────────────────────────────────
+// ── deliverables (links) ──────────────────────────────────────────────────────
+
+/** Resolve a deliverable's kind, mapping the legacy done/due booleans for old events. */
+function deliverableKindFrom(data: Record<string, unknown>): DeliverableKind {
+  const k = asString(data.kind)
+  if (k === 'reference' || k === 'due' || k === 'delivered') return k
+  if (asBool(data.done)) return 'delivered'
+  if (asBool(data.due)) return 'due'
+  return 'reference'
+}
 
 function applyDeliverable(
   state: State,
@@ -253,14 +207,14 @@ function applyDeliverable(
 ): void {
   if (verb === 'create') {
     if (state.deliverables[ev.subject]) return
-    const status = asString(data.status)
     state.deliverables[ev.subject] = {
       id: ev.subject,
       projectId: asString(data.projectId),
       label: asString(data.label),
-      status: (status === 'now' || status === 'done' ? status : 'todo') as ItemStatus,
-      due: asString(data.due),
-      clientVisible: asBool(data.clientVisible),
+      url: asString(data.url),
+      kind: deliverableKindFrom(data),
+      dueDate: asString(data.dueDate),
+      deliveredDate: asString(data.deliveredDate),
       order: asNum(data.order),
       archived: false,
       createdBy: ev.actor,
@@ -274,13 +228,14 @@ function applyDeliverable(
   if (!rec) return
   if (verb === 'update') {
     if ('label' in data) rec.label = asString(data.label)
-    if ('due' in data) rec.due = asString(data.due)
-    if ('order' in data) rec.order = asNum(data.order)
-    if ('clientVisible' in data) rec.clientVisible = asBool(data.clientVisible)
-    if ('status' in data) {
-      const s = asString(data.status)
-      if (s === 'todo' || s === 'now' || s === 'done') rec.status = s
+    if ('url' in data) rec.url = asString(data.url)
+    if ('kind' in data) {
+      const k = asString(data.kind)
+      if (k === 'reference' || k === 'due' || k === 'delivered') rec.kind = k
     }
+    if ('dueDate' in data) rec.dueDate = asString(data.dueDate)
+    if ('deliveredDate' in data) rec.deliveredDate = asString(data.deliveredDate)
+    if ('order' in data) rec.order = asNum(data.order)
     touch(rec, ev)
   } else if (verb === 'archive') {
     rec.archived = true
@@ -291,7 +246,7 @@ function applyDeliverable(
   }
 }
 
-// ── milestones ────────────────────────────────────────────────────────────────
+// ── milestones (roadmap) ──────────────────────────────────────────────────────
 
 function applyMilestone(
   state: State,
@@ -309,7 +264,6 @@ function applyMilestone(
       label: asString(data.label),
       desc: asString(data.desc),
       status: (status === 'next' || status === 'done' ? status : 'todo') as MilestoneStatus,
-      clientVisible: asBool(data.clientVisible),
       order: asNum(data.order),
       archived: false,
       createdBy: ev.actor,
@@ -326,55 +280,10 @@ function applyMilestone(
     if ('label' in data) rec.label = asString(data.label)
     if ('desc' in data) rec.desc = asString(data.desc)
     if ('order' in data) rec.order = asNum(data.order)
-    if ('clientVisible' in data) rec.clientVisible = asBool(data.clientVisible)
     if ('status' in data) {
       const s = asString(data.status)
       if (s === 'todo' || s === 'next' || s === 'done') rec.status = s
     }
-    touch(rec, ev)
-  } else if (verb === 'archive') {
-    rec.archived = true
-    touch(rec, ev)
-  } else if (verb === 'restore') {
-    rec.archived = false
-    touch(rec, ev)
-  }
-}
-
-// ── resources ─────────────────────────────────────────────────────────────────
-
-function applyResource(
-  state: State,
-  ev: AtlasEvent,
-  verb: string,
-  data: Record<string, unknown>,
-): void {
-  if (verb === 'create') {
-    if (state.resources[ev.subject]) return
-    state.resources[ev.subject] = {
-      id: ev.subject,
-      projectId: asString(data.projectId),
-      label: asString(data.label),
-      url: asString(data.url),
-      type: asString(data.type) || 'link',
-      note: asString(data.note),
-      clientVisible: asBool(data.clientVisible),
-      archived: false,
-      createdBy: ev.actor,
-      createdAt: ev.ts,
-      updatedBy: ev.actor,
-      updatedAt: ev.ts,
-    }
-    return
-  }
-  const rec = state.resources[ev.subject]
-  if (!rec) return
-  if (verb === 'update') {
-    if ('label' in data) rec.label = asString(data.label)
-    if ('url' in data) rec.url = asString(data.url)
-    if ('type' in data) rec.type = asString(data.type) || 'link'
-    if ('note' in data) rec.note = asString(data.note)
-    if ('clientVisible' in data) rec.clientVisible = asBool(data.clientVisible)
     touch(rec, ev)
   } else if (verb === 'archive') {
     rec.archived = true
@@ -399,14 +308,10 @@ function applyLog(
     state.logEntries[ev.subject] = {
       id: ev.subject,
       projectId: asString(data.projectId),
+      at: asString(data.at) || ev.ts,
       title: asString(data.title),
       body: asString(data.body),
-      source: source === 'agent' ? 'agent' : 'human',
-      commits: asNum(data.commits),
-      repo: asString(data.repo),
-      hash: asString(data.hash),
-      at: asString(data.at) || ev.ts,
-      clientVisible: asBool(data.clientVisible),
+      source: source === 'agent' ? 'agent' : 'manual',
       archived: false,
       createdBy: ev.actor,
       createdAt: ev.ts,
@@ -420,7 +325,6 @@ function applyLog(
   if (verb === 'update') {
     if ('title' in data) rec.title = asString(data.title)
     if ('body' in data) rec.body = asString(data.body)
-    if ('clientVisible' in data) rec.clientVisible = asBool(data.clientVisible)
     touch(rec, ev)
   } else if (verb === 'archive') {
     rec.archived = true
@@ -431,89 +335,7 @@ function applyLog(
   }
 }
 
-// ── lineage edges (directed) ──────────────────────────────────────────────────
-
-function applyLineage(
-  state: State,
-  ev: AtlasEvent,
-  verb: string,
-  data: Record<string, unknown>,
-): void {
-  if (verb === 'add') {
-    if (state.lineage[ev.subject]) return
-    state.lineage[ev.subject] = {
-      id: ev.subject,
-      from: asString(data.from),
-      to: asString(data.to),
-      kind: asString(data.kind) || 'reused',
-      note: asString(data.note),
-      clientVisible: asBool(data.clientVisible),
-      archived: false,
-      createdBy: ev.actor,
-      createdAt: ev.ts,
-      updatedBy: ev.actor,
-      updatedAt: ev.ts,
-    }
-    return
-  }
-  const rec = state.lineage[ev.subject]
-  if (!rec) return
-  if (verb === 'update') {
-    if ('kind' in data) rec.kind = asString(data.kind) || rec.kind
-    if ('note' in data) rec.note = asString(data.note)
-    if ('clientVisible' in data) rec.clientVisible = asBool(data.clientVisible)
-    touch(rec, ev)
-  } else if (verb === 'remove') {
-    rec.archived = true
-    touch(rec, ev)
-  }
-}
-
-// ── suggestions (agent-proposed, human-approved) ──────────────────────────────
-
-function applySuggestion(
-  state: State,
-  ev: AtlasEvent,
-  verb: string,
-  data: Record<string, unknown>,
-): void {
-  if (verb === 'create') {
-    if (state.suggestions[ev.subject]) return
-    const source = asString(data.source)
-    state.suggestions[ev.subject] = {
-      id: ev.subject,
-      projectId: asString(data.projectId),
-      op: asString(data.op),
-      draftType: asString(data.draftType),
-      draftSubject: asString(data.draftSubject),
-      draftData:
-        data.draftData && typeof data.draftData === 'object'
-          ? (data.draftData as Record<string, unknown>)
-          : {},
-      rationale: asString(data.rationale),
-      source: source === 'human' ? 'human' : 'agent',
-      status: 'pending',
-      at: asString(data.at) || ev.ts,
-      archived: false,
-      createdBy: ev.actor,
-      createdAt: ev.ts,
-      updatedBy: ev.actor,
-      updatedAt: ev.ts,
-    }
-    return
-  }
-  const rec = state.suggestions[ev.subject]
-  if (!rec) return
-  if (verb === 'approve') {
-    rec.status = 'approved'
-    touch(rec, ev)
-  } else if (verb === 'dismiss') {
-    rec.status = 'dismissed'
-    touch(rec, ev)
-  }
-}
-
-// ── generic entity many-to-many links (kept for forward-compat) ────────────────
+// ── project ↔ contact links (bidirectional) ───────────────────────────────────
 
 function applyLink(
   state: State,
@@ -551,20 +373,23 @@ export function fieldStr(rec: EntityRecord | undefined, key: string): string {
   return typeof v === 'string' ? v : typeof v === 'number' ? String(v) : ''
 }
 
-export function fieldNum(rec: EntityRecord | undefined, key: string): number {
-  const v = rec?.fields[key]
-  if (typeof v === 'number') return v
-  if (typeof v === 'string') {
-    const n = Number(v)
-    return Number.isFinite(n) ? n : 0
-  }
-  return 0
-}
-
 export function refName(state: State, id: string): string {
   const rec = state.entities[id]
   if (!rec) return ''
-  return fieldStr(rec, 'name') || fieldStr(rec, 'title')
+  return fieldStr(rec, 'name')
+}
+
+export function projectsForClient(state: State, clientId: string): EntityRecord[] {
+  return entitiesOfKind(state, 'project').filter((p) => fieldStr(p, 'client') === clientId)
+}
+
+export function linkedOfKind(state: State, entityId: string, kind: EntityKind): EntityRecord[] {
+  const rec = state.entities[entityId]
+  if (!rec) return []
+  return rec.links
+    .map((id) => state.entities[id])
+    .filter((e): e is EntityRecord => !!e && e.kind === kind && !e.archived)
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))
 }
 
 export function deliverablesForProject(state: State, projectId: string): Deliverable[] {
@@ -579,68 +404,10 @@ export function milestonesForProject(state: State, projectId: string): Milestone
     .sort((a, b) => a.order - b.order || (a.createdAt < b.createdAt ? -1 : 1))
 }
 
-export function resourcesForProject(state: State, projectId: string): Resource[] {
-  return Object.values(state.resources)
-    .filter((r) => r.projectId === projectId && !r.archived)
-    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))
-}
-
 export function logForProject(state: State, projectId: string): LogEntry[] {
   return Object.values(state.logEntries)
     .filter((l) => l.projectId === projectId && !l.archived)
     .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : b.createdAt < a.createdAt ? -1 : 1))
-}
-
-export function recentLog(state: State, limit = 12): LogEntry[] {
-  return Object.values(state.logEntries)
-    .filter((l) => !l.archived)
-    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : b.createdAt < a.createdAt ? -1 : 1))
-    .slice(0, limit)
-}
-
-export function edgesOf(state: State): LineageEdge[] {
-  return Object.values(state.lineage).filter((e) => !e.archived)
-}
-
-export function childrenOf(state: State, projectId: string): LineageEdge[] {
-  return edgesOf(state).filter((e) => e.from === projectId)
-}
-
-export function parentsOf(state: State, projectId: string): LineageEdge[] {
-  return edgesOf(state).filter((e) => e.to === projectId)
-}
-
-/** the full lineage of a project: itself + all ancestors + all descendants. */
-export function lineageSetFor(state: State, projectId: string): Set<string> {
-  const edges = edgesOf(state)
-  const set = new Set<string>([projectId])
-  const up = (id: string) => {
-    for (const e of edges)
-      if (e.to === id && !set.has(e.from)) {
-        set.add(e.from)
-        up(e.from)
-      }
-  }
-  const down = (id: string) => {
-    for (const e of edges)
-      if (e.from === id && !set.has(e.to)) {
-        set.add(e.to)
-        down(e.to)
-      }
-  }
-  up(projectId)
-  down(projectId)
-  return set
-}
-
-export interface DeliverableStats {
-  done: number
-  total: number
-}
-
-export function deliverableStats(state: State, projectId: string): DeliverableStats {
-  const ds = deliverablesForProject(state, projectId)
-  return { done: ds.filter((d) => d.status === 'done').length, total: ds.length }
 }
 
 export function nextMilestone(state: State, projectId: string): Milestone | null {
@@ -648,29 +415,47 @@ export function nextMilestone(state: State, projectId: string): Milestone | null
   return ms.find((m) => m.status === 'next') ?? ms.find((m) => m.status === 'todo') ?? null
 }
 
-export function pendingSuggestions(state: State): Suggestion[] {
-  return Object.values(state.suggestions)
-    .filter((s) => s.status === 'pending')
-    .sort((a, b) => (a.at < b.at ? 1 : -1))
+// ── derived lineage (from @mentions in the `context` field) ───────────────────
+
+/** Project ids `projectId`'s context mentions (its upstream — what it builds on). */
+export function mentionsOf(state: State, projectId: string): string[] {
+  const p = state.entities[projectId]
+  if (!p || p.kind !== 'project') return []
+  const ids = new Set(
+    mentionedIds(fieldStr(p, 'context')).filter(
+      (id) => id !== projectId && state.entities[id]?.kind === 'project',
+    ),
+  )
+  return [...ids]
 }
 
-export function pendingSuggestionsForProject(state: State, projectId: string): Suggestion[] {
-  return pendingSuggestions(state).filter((s) => s.projectId === projectId)
-}
-
-/** id prefix to mint when approving a "create" suggestion whose subject is blank. */
-export function prefixForType(draftType: string): string {
-  const entity = draftType.split('.')[0] ?? ''
-  const map: Record<string, string> = {
-    project: 'prj',
-    client: 'cli',
-    contact: 'con',
-    contract: 'ctr',
-    deliverable: 'dlv',
-    milestone: 'mst',
-    resource: 'res',
-    log: 'log',
-    lineage: 'lin',
+/** Projects whose context mentions `projectId` (its downstream — what it inspired). */
+export function mentionedBy(state: State, projectId: string): string[] {
+  const out: string[] = []
+  for (const p of entitiesOfKind(state, 'project')) {
+    if (p.id === projectId) continue
+    if (mentionsOf(state, p.id).includes(projectId)) out.push(p.id)
   }
-  return map[entity] ?? 'rec'
+  return out
+}
+
+export interface GraphEdge {
+  from: string
+  to: string
+}
+
+/** The whole directed lineage graph, derived from every project's context. An edge
+ *  from→to means "from builds on / draws from to". */
+export function graphEdges(state: State): GraphEdge[] {
+  const edges: GraphEdge[] = []
+  const seen = new Set<string>()
+  for (const p of entitiesOfKind(state, 'project', true)) {
+    for (const to of mentionsOf(state, p.id)) {
+      const key = `${p.id}→${to}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      edges.push({ from: p.id, to })
+    }
+  }
+  return edges
 }

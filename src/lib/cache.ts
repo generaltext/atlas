@@ -8,19 +8,15 @@ import type { AtlasEvent } from './events'
 
 const DB_NAME = 'atlas'
 const STORE = 'projection'
-// The fold cursor lives in memory and is revalidated each session (a saved char
-// offset is not a valid resume point over a CRDT shard). Bump to discard stale
-// caches on a schema change.
-const CACHE_VERSION = 2
+// Bump to discard stale caches on a schema change. (v4: deliverables gained a
+// kind + delivered/due dates; a full replay from the log re-derives them.)
+const CACHE_VERSION = 4
 
 interface SerializedState {
   entities: State['entities']
   deliverables: State['deliverables']
   milestones: State['milestones']
-  resources: State['resources']
-  lineage: State['lineage']
   logEntries: State['logEntries']
-  suggestions: State['suggestions']
   events: AtlasEvent[]
   applied: string[]
 }
@@ -73,10 +69,7 @@ export async function loadCache(workspaceId: string): Promise<{ state: State } |
     s.entities = cached.state.entities
     s.deliverables = cached.state.deliverables
     s.milestones = cached.state.milestones
-    s.resources = cached.state.resources
-    s.lineage = cached.state.lineage
     s.logEntries = cached.state.logEntries
-    s.suggestions = cached.state.suggestions ?? {}
     s.events = cached.state.events
     s.applied = new Set(cached.state.applied)
     return { state: s }
@@ -95,10 +88,7 @@ export async function saveCache(workspaceId: string, state: State): Promise<void
         entities: state.entities,
         deliverables: state.deliverables,
         milestones: state.milestones,
-        resources: state.resources,
-        lineage: state.lineage,
         logEntries: state.logEntries,
-        suggestions: state.suggestions,
         events: state.events,
         applied: [...state.applied],
       },

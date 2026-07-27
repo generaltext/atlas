@@ -1,23 +1,20 @@
-// The entity model. Entity *kinds* (project/client/contact/contract) are declared
-// here as data so views, forms, and the command bar are driven by one registry —
-// adding a field is a one-line change, and a new kind is a new entry plus a route.
-//
-// Deliverables, milestones, resources, lineage edges, and update-log entries are
-// specialized child records handled directly by the reducer (they carry a
-// projectId and their own shapes), not by this generic field machinery.
+// The entity model. Kinds (project/client/contact) are declared as data so views
+// and the mention search are driven by one registry. Deliverables, roadmap
+// milestones, and update-log entries are per-project child records handled by the
+// reducer. The lineage graph is NOT stored — it is DERIVED from @mentions in each
+// project's freeform `context` field (see reducer: graphEdges).
 
-export type EntityKind = 'project' | 'client' | 'contact' | 'contract'
+export type EntityKind = 'project' | 'client' | 'contact'
 
 export type FieldType =
   | 'text'
   | 'rich'
-  | 'number'
-  | 'money'
   | 'email'
   | 'url'
   | 'ref'
   | 'date'
   | 'select'
+  | 'mentions'
 
 export interface SelectOption {
   key: string
@@ -50,20 +47,6 @@ export interface KindDef {
   fields: FieldDef[]
 }
 
-export const PROJECT_STATUSES: SelectOption[] = [
-  { key: 'active', label: 'Active' },
-  { key: 'risk', label: 'At risk' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'archived', label: 'Archived' },
-]
-
-export const CONTRACT_STATUSES: SelectOption[] = [
-  { key: 'draft', label: 'Draft' },
-  { key: 'signed', label: 'Signed' },
-  { key: 'active', label: 'Active' },
-  { key: 'closed', label: 'Closed' },
-]
-
 export const KINDS: Record<EntityKind, KindDef> = {
   project: {
     kind: 'project',
@@ -74,13 +57,12 @@ export const KINDS: Record<EntityKind, KindDef> = {
     route: 'projects',
     fields: [
       { key: 'name', label: 'Name', type: 'text', title: true, placeholder: 'Project name' },
-      { key: 'type', label: 'Type', type: 'text', placeholder: 'e.g. Interactive atlas' },
-      { key: 'status', label: 'Status', type: 'select', options: PROJECT_STATUSES },
       { key: 'client', label: 'Client', type: 'ref', refKind: 'client' },
-      { key: 'period', label: 'Period', type: 'text', placeholder: 'e.g. 2024 – 2026' },
-      { key: 'value', label: 'Contract value', type: 'money', placeholder: '0' },
-      { key: 'progress', label: 'Timeline elapsed (%)', type: 'number', placeholder: '0' },
-      { key: 'summary', label: 'Summary', type: 'rich' },
+      { key: 'lead', label: 'Lead', type: 'ref', refKind: 'contact' },
+      { key: 'start', label: 'Start', type: 'date' },
+      { key: 'end', label: 'End', type: 'date' },
+      { key: 'status', label: 'Status', type: 'select' },
+      { key: 'context', label: 'Context', type: 'mentions' },
     ],
   },
   client: {
@@ -92,8 +74,6 @@ export const KINDS: Record<EntityKind, KindDef> = {
     route: 'clients',
     fields: [
       { key: 'name', label: 'Name', type: 'text', title: true, placeholder: 'Client name' },
-      { key: 'website', label: 'Website', type: 'url', placeholder: 'https://' },
-      { key: 'location', label: 'Location', type: 'text' },
       { key: 'about', label: 'About', type: 'rich' },
     ],
   },
@@ -108,30 +88,11 @@ export const KINDS: Record<EntityKind, KindDef> = {
       { key: 'name', label: 'Name', type: 'text', title: true, placeholder: 'Full name' },
       { key: 'role', label: 'Role', type: 'text', placeholder: 'Title or role' },
       { key: 'email', label: 'Email', type: 'email', placeholder: 'name@example.com' },
-      { key: 'phone', label: 'Phone', type: 'text' },
-      { key: 'client', label: 'Client', type: 'ref', refKind: 'client' },
-    ],
-  },
-  contract: {
-    kind: 'contract',
-    prefix: 'ctr',
-    singular: 'Contract',
-    plural: 'Contracts',
-    icon: 'FileText',
-    route: 'contracts',
-    fields: [
-      { key: 'title', label: 'Title', type: 'text', title: true, placeholder: 'Contract name' },
-      { key: 'client', label: 'Client', type: 'ref', refKind: 'client' },
-      { key: 'value', label: 'Value', type: 'money', placeholder: '0' },
-      { key: 'start', label: 'Start', type: 'date' },
-      { key: 'end', label: 'End', type: 'date' },
-      { key: 'status', label: 'Status', type: 'select', options: CONTRACT_STATUSES },
-      { key: 'terms', label: 'Terms', type: 'rich' },
     ],
   },
 }
 
-export const KIND_LIST: KindDef[] = [KINDS.project, KINDS.client, KINDS.contact, KINDS.contract]
+export const KIND_LIST: KindDef[] = [KINDS.project, KINDS.client, KINDS.contact]
 
 export function kindOfId(id: string): EntityKind | null {
   const p = id.slice(0, id.indexOf('_'))
@@ -145,68 +106,96 @@ export function titleField(kind: EntityKind): string {
 
 // ── child-record vocabularies ────────────────────────────────────────────────
 
-/** Deliverable / milestone status. `now` = in progress. */
-export type ItemStatus = 'todo' | 'now' | 'done'
+/** Roadmap milestone status. `next` = the one currently in focus. */
 export type MilestoneStatus = 'todo' | 'next' | 'done'
 
-export const RESOURCE_TYPES: SelectOption[] = [
-  { key: 'repo', label: 'Repository' },
-  { key: 'deploy', label: 'Deployed site' },
-  { key: 'design', label: 'Design file' },
-  { key: 'doc', label: 'Document' },
-  { key: 'dataset', label: 'Dataset' },
-  { key: 'contract', label: 'Contract' },
-  { key: 'report', label: 'Report' },
-  { key: 'link', label: 'Link' },
-]
+/** Where an update-log entry came from. */
+export type LogSource = 'manual' | 'agent'
 
-/** lucide icon per resource type. */
-export const RESOURCE_ICONS: Record<string, string> = {
-  repo: 'GitBranch',
-  deploy: 'Globe',
-  design: 'PenTool',
-  doc: 'FileText',
-  dataset: 'Database',
-  contract: 'FileSignature',
-  report: 'FileBarChart',
-  link: 'Link',
+/** A deliverable's kind: a plain reference link, something committed/due (optional
+ *  date), or delivered (with a delivered date). Replaces a simple done checkbox. */
+export type DeliverableKind = 'reference' | 'due' | 'delivered'
+
+export interface DeliverableKindDef {
+  key: DeliverableKind
+  label: string
+  icon: string
+  colorVar: string
+}
+export const DELIVERABLE_KINDS: DeliverableKindDef[] = [
+  { key: 'reference', label: 'Reference', icon: 'Link', colorVar: '--faint' },
+  { key: 'due', label: 'Due', icon: 'Clock', colorVar: '--warn' },
+  { key: 'delivered', label: 'Delivered', icon: 'CheckCircle2', colorVar: '--good' },
+]
+export function deliverableKindDef(kind: string): DeliverableKindDef {
+  return DELIVERABLE_KINDS.find((k) => k.key === kind) ?? DELIVERABLE_KINDS[0]!
 }
 
-export const LINEAGE_KINDS: SelectOption[] = [
-  { key: 'seeded', label: 'seeded' },
-  { key: 'extracted', label: 'extracted' },
-  { key: 'reused', label: 'reused by' },
-  { key: 'informed', label: 'informed' },
-  { key: 'forked', label: 'forked into' },
+// ── Config (project statuses: label + color), stored in v0/config.json ────────
+//
+// Statuses are USER-CONFIGURABLE (name + color) via the Settings tab, so they live
+// in config rather than hardcoded. Milestone statuses (todo/next/done) are a fixed,
+// separate vocabulary and are NOT configured here.
+
+/** The swatches a status color can be — each maps to a palette CSS variable. */
+export interface StatusColorDef {
+  key: string
+  label: string
+  var: string
+}
+export const STATUS_COLORS: StatusColorDef[] = [
+  { key: 'green', label: 'Green', var: '--good' },
+  { key: 'teal', label: 'Teal', var: '--st-teal' },
+  { key: 'sky', label: 'Sky', var: '--st-sky' },
+  { key: 'marine', label: 'Marine', var: '--info' },
+  { key: 'violet', label: 'Violet', var: '--st-violet' },
+  { key: 'amber', label: 'Amber', var: '--warn' },
+  { key: 'brass', label: 'Brass', var: '--brass' },
+  { key: 'red', label: 'Red', var: '--crit' },
+  { key: 'grey', label: 'Grey', var: '--muted' },
 ]
 
-// ── Config (project-status palette + resource palette), stored in v0/config.json ─
+export function colorVarName(color: string): string {
+  return STATUS_COLORS.find((c) => c.key === color)?.var ?? '--muted'
+}
 
-/** tone drives the pill/dot color: good → green, warn → amber, info → marine, muted → grey. */
-export type Tone = 'good' | 'warn' | 'info' | 'muted'
+export interface StatusDef {
+  key: string
+  label: string
+  color: string
+}
 
 export interface Config {
-  /** status key → display tone, so palettes are editable without a code change */
-  statusTone: Record<string, Tone>
+  statuses: StatusDef[]
+  /** status key new projects start with */
+  defaultStatus: string
 }
 
 export const DEFAULT_CONFIG: Config = {
-  statusTone: {
-    active: 'good',
-    risk: 'warn',
-    completed: 'info',
-    archived: 'muted',
-    signed: 'good',
-    draft: 'muted',
-    closed: 'info',
-  },
+  statuses: [
+    { key: 'active', label: 'Active', color: 'green' },
+    { key: 'risk', label: 'At risk', color: 'amber' },
+    { key: 'hold', label: 'On hold', color: 'amber' },
+    { key: 'done', label: 'Delivered', color: 'marine' },
+    { key: 'archived', label: 'Archived', color: 'grey' },
+  ],
+  defaultStatus: 'active',
 }
 
-export function statusTone(key: string, config: Config): Tone {
-  return config.statusTone[key] ?? 'muted'
+export function statusDef(config: Config, key: string): StatusDef | undefined {
+  return config.statuses.find((s) => s.key === key)
 }
 
-export function statusLabel(key: string): string {
-  const all = [...PROJECT_STATUSES, ...CONTRACT_STATUSES]
-  return all.find((s) => s.key === key)?.label ?? key
+export function statusLabel(config: Config, key: string): string {
+  return statusDef(config, key)?.label ?? key
+}
+
+/** The palette CSS variable NAME (e.g. `--good`) for a status's color. */
+export function statusColorVarName(config: Config, key: string): string {
+  const s = statusDef(config, key)
+  return s ? colorVarName(s.color) : '--muted'
+}
+
+export function statusOptions(config: Config): SelectOption[] {
+  return config.statuses.map((s) => ({ key: s.key, label: s.label }))
 }
