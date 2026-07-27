@@ -1,0 +1,14 @@
+{
+  "name": "atlas",
+  "displayName": "Atlas",
+  "version": "0.1.0",
+  "gtApi": "^1.0",
+  "blurb": "A master view of your projects, clients, and how the work connects — plus living reports you can share.",
+  "color": "teal",
+  "tags": ["projects", "portfolio", "clients", "reports", "roadmap", "lineage"],
+  "repository": "https://github.com/generaltext/atlas",
+  "icon": {
+    "kind": "svg",
+    "value": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='7' r='2'/><circle cx='18' cy='6' r='2'/><circle cx='16' cy='18' r='2'/><circle cx='6' cy='17' r='2'/><path d='M8 7.5 L16 6.3'/><path d='M7 9 L6 15'/><path d='M17.4 7.7 L16.4 16'/><path d='M8 16.6 L14 17.7'/></svg>"
+  }
+}
