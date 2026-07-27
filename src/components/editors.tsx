@@ -77,56 +77,59 @@ function DeliverableRow({ d }: { d: Deliverable }) {
     if (kind === 'delivered' && !d.deliveredDate) patch.deliveredDate = todayISO()
     upd(patch)
   }
+  const dated = d.kind === 'due' || d.kind === 'delivered'
+  const dateVal = d.kind === 'due' ? d.dueDate : d.deliveredDate
+  const dateColor = d.kind === 'delivered' ? '--good' : '--warn'
   return (
-    <li className="group flex items-center gap-2.5 border-t border-[var(--border)] py-1.5 first:border-t-0">
-      <KindMarker kind={d.kind} onPick={pickKind} />
-      <div className="min-w-0 flex-1">
+    <li className="group border-t border-[var(--line-soft)] py-2 first:border-t-0">
+      {/* line 1: dot + title (dot is centered with the title) */}
+      <div className="flex items-center gap-2.5">
+        <KindMarker kind={d.kind} onPick={pickKind} />
         <EditableText
           value={d.label}
           onSave={(v) => upd({ label: v })}
-          className={`block w-full truncate text-[14px] ${d.kind === 'delivered' ? 'text-[var(--muted)]' : ''}`}
+          className={`min-w-0 flex-1 truncate text-[14px] leading-tight ${d.kind === 'delivered' ? 'text-[var(--muted)]' : ''}`}
           placeholder="Label"
         />
+        <span className="shrink-0 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+          <ConfirmDelete onConfirm={() => dispatch({ type: 'deliverable.archive', subject: d.id })} />
+        </span>
       </div>
-      <EditableText
-        value={d.url}
-        onSave={(v) => upd({ url: v })}
-        className="min-w-0 max-w-[11rem] truncate font-mono-x text-[11px] text-[var(--faint)]"
-        placeholder="add link"
-        type="url"
-      />
-      {d.kind === 'due' && (
+      {/* line 2 (indented under the title): link + its open button, date at the right */}
+      <div className="mt-0 flex items-center gap-1.5 pl-[1.875rem] text-[11px] leading-none">
         <EditableText
-          value={d.dueDate}
-          onSave={(v) => upd({ dueDate: v })}
-          className="shrink-0 font-mono-x text-[10.5px] text-[var(--warn)]"
-          placeholder="due date"
-          type="date"
+          value={d.url}
+          onSave={(v) => upd({ url: v })}
+          className="min-w-0 truncate font-mono-x text-[var(--faint)]"
+          placeholder="add link"
+          type="url"
         />
-      )}
-      {d.kind === 'delivered' && (
-        <EditableText
-          value={d.deliveredDate}
-          onSave={(v) => upd({ deliveredDate: v })}
-          className="shrink-0 font-mono-x text-[10.5px] text-[var(--good)]"
-          placeholder="date"
-          type="date"
-        />
-      )}
-      {d.url && (
-        <a
-          href={d.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Open"
-          className="shrink-0 text-[var(--faint)] transition hover:text-[var(--accent)]"
-        >
-          <Icon name="ExternalLink" size={14} />
-        </a>
-      )}
-      <span className="shrink-0 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-        <ConfirmDelete onConfirm={() => dispatch({ type: 'deliverable.archive', subject: d.id })} />
-      </span>
+        {d.url && (
+          <a
+            href={d.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open link"
+            className="shrink-0 text-[var(--faint)] transition hover:text-[var(--accent)]"
+          >
+            <Icon name="ExternalLink" size={12} />
+          </a>
+        )}
+        {dated && (
+          <span
+            className="ml-auto shrink-0 whitespace-nowrap"
+            style={{ color: `var(${dateColor})` }}
+          >
+            <EditableText
+              value={dateVal}
+              onSave={(v) => upd(d.kind === 'due' ? { dueDate: v } : { deliveredDate: v })}
+              className="whitespace-nowrap font-mono-x text-[10.5px]"
+              placeholder="date"
+              type="date"
+            />
+          </span>
+        )}
+      </div>
     </li>
   )
 }

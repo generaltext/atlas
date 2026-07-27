@@ -45,7 +45,7 @@ export function GraphPage() {
                 <button className="font-medium hover:text-[var(--accent)]" onClick={() => navigate(`/p/${e.from}`)}>
                   {nameOf(e.from)}
                 </button>
-                <span className="font-mono-x text-[12px] text-[var(--brass)]">— builds on →</span>
+                <span className="font-mono-x text-[12px] text-[var(--brass)]">· builds on →</span>
                 <button className="font-medium hover:text-[var(--accent)]" onClick={() => navigate(`/p/${e.to}`)}>
                   {nameOf(e.to)}
                 </button>

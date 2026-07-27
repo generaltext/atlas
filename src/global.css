@@ -41,6 +41,7 @@ body {
   --muted: #5a6b72;
   --faint: #85959c;
   --border: #dedfd8;
+  --line-soft: #e6e7e1;
   --hover: #e9eae3;
   --accent: #1c5a7a;
   --accent-soft: #dce8ee;
@@ -66,6 +67,7 @@ body {
   --muted: #a2b0b6;
   --faint: #64757c;
   --border: #24343c;
+  --line-soft: #1b2930;
   --hover: #1c2a31;
   --accent: #58a8ce;
   --accent-soft: #14303c;

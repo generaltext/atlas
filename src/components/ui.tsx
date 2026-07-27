@@ -206,28 +206,54 @@ export function EditableText({
   )
 }
 
+/** A custom dropdown (not a native `<select>`, which renders inconsistently — the
+ *  glossy chrome on macOS). Button shows the current label; a popup lists options. */
 export function EditableSelect({
   value,
   options,
   onSave,
+  placeholder = '—',
 }: {
   value: string
   options: SelectOption[]
   onSave: (v: string) => void
+  placeholder?: string
 }) {
+  const [open, setOpen] = useState(false)
+  const current = options.find((o) => o.key === value)?.label
   return (
-    <select
-      value={value}
-      onChange={(e) => onSave(e.target.value)}
-      className="rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-[13px] outline-none focus:border-[var(--accent)]"
-    >
-      {!value && <option value="">—</option>}
-      {options.map((o) => (
-        <option key={o.key} value={o.key}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-[13px] outline-none transition hover:border-[var(--marine-dim)]"
+      >
+        <span className={current ? '' : 'text-[var(--faint)]'}>{current ?? placeholder}</span>
+        <Icon name="ChevronDown" size={12} className="opacity-60" />
+      </button>
+      {open && (
+        <ul className="absolute left-0 top-full z-50 mt-1 max-h-60 min-w-full overflow-auto rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
+          {options.map((o) => (
+            <li key={o.key}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  onSave(o.key)
+                  setOpen(false)
+                }}
+                className={`block w-full whitespace-nowrap px-3 py-1.5 text-left text-[13px] hover:bg-[var(--hover)] ${
+                  o.key === value ? 'font-medium text-[var(--fg)]' : 'text-[var(--muted)]'
+                }`}
+              >
+                {o.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </span>
   )
 }
 

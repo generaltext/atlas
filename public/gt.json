@@ -1,7 +1,7 @@
 {
   "name": "atlas",
   "displayName": "Atlas",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "gtApi": "^1.0",
   "blurb": "A master view of your projects, clients, and how the work connects — plus living reports you can share.",
   "color": "teal",

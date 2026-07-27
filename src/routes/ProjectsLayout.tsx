@@ -5,6 +5,7 @@ import { entitiesOfKind, fieldStr, refName } from '../lib/reducer'
 import { ProjectCard } from '../components/ProjectCard'
 import { useCreate } from '../components/useCreate'
 import { Icon } from '../components/Icon'
+import { EditableSelect } from '../components/ui'
 
 type Sort = 'created-desc' | 'created-asc' | 'name' | 'updated'
 const SORTS: { key: Sort; label: string }[] = [
@@ -35,11 +36,21 @@ export function ProjectsLayout() {
   }
 
   const projects = entitiesOfKind(state, 'project')
+  // "Newest"/"Oldest" go by the project's SET start date (ISO, sorts lexically);
+  // projects with no date fall back to record-created order, and sink below dated ones.
+  const byStart = (a: (typeof projects)[number], b: (typeof projects)[number], newestFirst: boolean) => {
+    const as = fieldStr(a, 'start')
+    const bs = fieldStr(b, 'start')
+    if (as && bs && as !== bs) return (as < bs ? 1 : -1) * (newestFirst ? 1 : -1)
+    if (as && !bs) return -1
+    if (!as && bs) return 1
+    return a.createdAt < b.createdAt ? (newestFirst ? 1 : -1) : newestFirst ? -1 : 1
+  }
   const sorted = [...projects].sort((a, b) => {
     if (sort === 'name') return fieldStr(a, 'name').localeCompare(fieldStr(b, 'name'))
     if (sort === 'updated') return a.updatedAt < b.updatedAt ? 1 : -1
-    if (sort === 'created-asc') return a.createdAt < b.createdAt ? -1 : 1
-    return a.createdAt < b.createdAt ? 1 : -1 // created-desc (newest first)
+    if (sort === 'created-asc') return byStart(a, b, false) // Oldest
+    return byStart(a, b, true) // Newest
   })
   const q = query.trim().toLowerCase()
   const list = q
@@ -65,18 +76,7 @@ export function ProjectsLayout() {
               >
                 <Icon name="Plus" size={15} />
               </button>
-              <select
-                value={sort}
-                onChange={(e) => changeSort(e.target.value as Sort)}
-                title="Sort projects"
-                className="rounded-md border border-[var(--border)] bg-[var(--panel)] px-1.5 py-0.5 font-mono-x text-[11px] text-[var(--muted)] outline-none focus:border-[var(--accent)]"
-              >
-                {SORTS.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+              <EditableSelect value={sort} options={SORTS} onSave={(v) => changeSort(v as Sort)} />
             </div>
           </div>
           <div className="relative mb-2">
