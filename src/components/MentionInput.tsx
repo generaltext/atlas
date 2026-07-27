@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../lib/store'
 import { fieldStr } from '../lib/reducer'
 import { mentionToken, parseBody } from '../lib/mentions'
-import { Icon } from './Icon'
 
 // A contenteditable freeform editor with @-autocomplete over PROJECTS. Typing
 // `@name` and choosing a project inserts a durable `@[Label](prj_id)` token; the
@@ -232,7 +231,6 @@ export function MentionInput({
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
                 style={{ background: i === popup.active ? 'var(--hover)' : 'transparent' }}
               >
-                <Icon name="FolderGit2" size={14} className="shrink-0 text-[var(--faint)]" />
                 <span className="truncate">{m.title}</span>
                 {m.client && (
                   <span className="ml-auto truncate text-xs text-[var(--faint)]">{m.client}</span>

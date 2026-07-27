@@ -1,14 +1,14 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { fieldStr, linkedOfKind, projectsForClient } from '../lib/reducer'
-import { KINDS, type FieldDef } from '../lib/model'
+import { KINDS, statusColorVarName, statusLabel, type FieldDef } from '../lib/model'
 import { Icon } from '../components/Icon'
 import { EditableText, ConfirmDelete } from '../components/ui'
 
 export function EntityDetail() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const { state, dispatch } = useStore()
+  const { state, config, dispatch } = useStore()
   const rec = state.entities[id]
 
   if (!rec || rec.kind === 'project') {
@@ -70,8 +70,15 @@ export function EntityDetail() {
           <div className="rowlist">
             {projects.map((p) => (
               <Link key={p.id} to={`/p/${p.id}`} className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-[var(--hover)]">
-                <Icon name="FolderGit2" size={15} className="text-[var(--faint)]" />
-                <span className="flex-1 text-[14px] font-medium">{fieldStr(p, 'name')}</span>
+                <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{fieldStr(p, 'name')}</span>
+                {fieldStr(p, 'status') && (
+                  <span
+                    className="shrink-0 font-mono-x text-[10px] uppercase tracking-[0.06em]"
+                    style={{ color: `var(${statusColorVarName(config, fieldStr(p, 'status'))})` }}
+                  >
+                    {statusLabel(config, fieldStr(p, 'status'))}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
