@@ -1,29 +1,85 @@
 import { AtlasMark } from './AtlasMark'
+import { Icon } from './Icon'
 
-// Shown when the app is opened standalone (deployed site, no General Text shell).
-// Offers a local in-browser demo workspace.
+// Shown when Atlas is opened outside General Text — no injected `window.gt` runtime
+// (visiting the deployed site directly). A General Text app has no backend of its
+// own, so on its own there's nothing to read or write; point the visitor at how to
+// use it, and let them try a local sample-data demo right here. Mirrors the crum
+// standalone splash so every first-party app behaves the same off-platform.
 export function MissingRuntime({ onTryDemo }: { onTryDemo: () => void }) {
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://atlas.generaltext.org'
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-6">
-      <div className="max-w-md text-center">
-        <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--fg)] text-[var(--bg)]">
-          <AtlasMark size={28} />
+    <div className="flex min-h-screen items-center justify-center px-6 py-12" style={{ background: 'var(--bg)', color: 'var(--fg)' }}>
+      <div className="w-full max-w-md space-y-5 rounded-2xl border p-7 shadow-sm" style={{ borderColor: 'var(--border)', background: 'var(--panel)' }}>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+            <AtlasMark size={22} />
+          </span>
+          <div className="leading-tight">
+            <h1 className="text-lg font-semibold tracking-tight">Atlas</h1>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>A General Text app · projects, clients &amp; living reports</p>
+          </div>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Atlas</h1>
-        <p className="mx-auto mt-2 max-w-sm text-[15px] leading-relaxed text-[var(--muted)]">
-          A master view of your projects, clients, and how the work connects — plus living reports
-          you can share. Atlas runs inside General Text; open it there to use your own workspace.
+
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+          Atlas runs <span style={{ color: 'var(--fg)', fontWeight: 500 }}>inside General Text</span>, a workspace
+          for plaintext files that sync across your devices and team. Opened on its own like this, it has no
+          workspace to read or write, so there's nothing to show yet.
         </p>
-        <button
-          onClick={onTryDemo}
-          className="mt-6 rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-        >
-          Try the demo
-        </button>
-        <p className="mt-3 font-mono-x text-[11px] text-[var(--faint)]">
-          Loads a sample studio in a local, in-browser workspace.
+
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>To use Atlas</p>
+          <ol className="space-y-1.5 text-sm" style={{ color: 'var(--muted)' }}>
+            <Step n={1}>Open <Link href="https://www.generaltext.org">General Text</Link> and open a workspace.</Step>
+            <Step n={2}>Go to <span style={{ color: 'var(--fg)' }}>Settings → Apps → Install by URL</span>.</Step>
+            <Step n={3}>
+              Paste this app's address:
+              <code className="mt-1 block rounded px-2 py-1 font-mono text-xs" style={{ background: 'var(--hover)', color: 'var(--fg)' }}>{appUrl}</code>
+            </Step>
+            <Step n={4}>Launch Atlas from your workspace.</Step>
+          </ol>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <a href="https://www.generaltext.org" className="inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium" style={{ background: 'var(--accent)', color: '#fff' }}>
+            Open General Text <Icon name="ExternalLink" size={14} />
+          </a>
+          <button
+            type="button"
+            onClick={onTryDemo}
+            className="inline-flex items-center gap-1.5 rounded-md border px-3.5 py-2 text-sm font-medium"
+            style={{ borderColor: 'var(--border)', color: 'var(--fg)' }}
+          >
+            Try the demo <Icon name="ArrowRight" size={14} />
+          </button>
+        </div>
+        <p className="-mt-1 text-xs" style={{ color: 'var(--muted)' }}>
+          The demo loads a sample studio locally in your browser. Nothing is saved to an account, and changes
+          stay on this device.
+        </p>
+
+        <p className="text-xs" style={{ color: 'var(--muted)' }}>
+          Building your own app? <Link href="https://www.generaltext.org/docs/building-apps">Read the developer guide</Link>.
         </p>
       </div>
     </div>
+  )
+}
+
+function Step({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-2.5">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium" style={{ background: 'var(--hover)', color: 'var(--fg)' }}>{n}</span>
+      <span className="min-w-0 flex-1">{children}</span>
+    </li>
+  )
+}
+
+function Link({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a href={href} className="underline underline-offset-2" style={{ color: 'var(--accent)', textDecorationColor: 'color-mix(in srgb, var(--accent) 40%, transparent)' }}>
+      {children}
+    </a>
   )
 }
