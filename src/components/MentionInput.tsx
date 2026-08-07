@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore } from '../lib/store'
-import { fieldStr } from '../lib/reducer'
+
 import { mentionToken, parseBody } from '../lib/mentions'
+import { fieldStr } from '../lib/reducer'
+import { useStore } from '../lib/store'
 
 // A contenteditable freeform editor with @-autocomplete over PROJECTS. Typing
 // `@name` and choosing a project inserts a durable `@[Label](prj_id)` token; the
@@ -209,7 +210,7 @@ export function MentionInput({
           onCommit?.()
         }}
         onKeyDown={onKeyDown}
-        className="w-full whitespace-pre-wrap break-words rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-2 text-[14px] leading-relaxed outline-none focus:border-[var(--accent)]"
+        className="w-full rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-2 text-[14px] leading-relaxed break-words whitespace-pre-wrap outline-none focus:border-[var(--accent)]"
         style={{ minHeight }}
       />
       {popup && (

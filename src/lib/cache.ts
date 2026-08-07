@@ -3,8 +3,8 @@
 // instantly. Nuke it (or bump CACHE_VERSION) and a full replay rebuilds identical
 // state.
 
-import { emptyState, type State } from './reducer'
 import type { AtlasEvent } from './events'
+import { emptyState, type State } from './reducer'
 
 const DB_NAME = 'atlas'
 const STORE = 'projection'
@@ -64,7 +64,8 @@ export async function loadCache(workspaceId: string): Promise<{ state: State } |
   try {
     const db = await open()
     const cached = await idbGet<CachedProjection>(db, cacheKey(workspaceId))
-    if (!cached || cached.version !== CACHE_VERSION || cached.workspaceId !== workspaceId) return null
+    if (!cached || cached.version !== CACHE_VERSION || cached.workspaceId !== workspaceId)
+      return null
     const s = emptyState()
     s.entities = cached.state.entities
     s.deliverables = cached.state.deliverables

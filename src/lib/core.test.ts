@@ -1,4 +1,9 @@
 import { describe, expect, it } from 'vitest'
+
+import { serializeEvent, type AtlasEvent } from './events'
+import { newId } from './ids'
+import { foldFrom } from './log'
+import { mentionToken } from './mentions'
 import {
   applyEvent,
   emptyState,
@@ -8,13 +13,16 @@ import {
   mentionsOf,
   nextMilestone,
 } from './reducer'
-import { foldFrom } from './log'
-import { serializeEvent, type AtlasEvent } from './events'
-import { newId } from './ids'
-import { mentionToken } from './mentions'
 
 function ev(type: string, subject: string, data?: Record<string, unknown>): AtlasEvent {
-  return { id: newId('evt'), ts: new Date().toISOString(), actor: null, type, subject, ...(data ? { data } : {}) }
+  return {
+    id: newId('evt'),
+    ts: new Date().toISOString(),
+    actor: null,
+    type,
+    subject,
+    ...(data ? { data } : {}),
+  }
 }
 
 describe('reducer', () => {
@@ -40,10 +48,46 @@ describe('reducer', () => {
     const s = emptyState()
     const prj = newId('prj')
     applyEvent(s, ev('project.create', prj, { name: 'P' }))
-    applyEvent(s, ev('deliverable.create', newId('dlv'), { projectId: prj, label: 'Repo', url: 'https://x', kind: 'reference', order: 0 }))
-    applyEvent(s, ev('deliverable.create', newId('dlv'), { projectId: prj, label: 'API', url: 'https://y', kind: 'due', dueDate: '2026-08-01', order: 1 }))
-    applyEvent(s, ev('deliverable.create', newId('dlv'), { projectId: prj, label: 'Site', kind: 'delivered', deliveredDate: '2026-05-01', order: 2 }))
-    applyEvent(s, ev('milestone.create', newId('mst'), { projectId: prj, label: 'M', status: 'next', order: 0 }))
+    applyEvent(
+      s,
+      ev('deliverable.create', newId('dlv'), {
+        projectId: prj,
+        label: 'Repo',
+        url: 'https://x',
+        kind: 'reference',
+        order: 0,
+      }),
+    )
+    applyEvent(
+      s,
+      ev('deliverable.create', newId('dlv'), {
+        projectId: prj,
+        label: 'API',
+        url: 'https://y',
+        kind: 'due',
+        dueDate: '2026-08-01',
+        order: 1,
+      }),
+    )
+    applyEvent(
+      s,
+      ev('deliverable.create', newId('dlv'), {
+        projectId: prj,
+        label: 'Site',
+        kind: 'delivered',
+        deliveredDate: '2026-05-01',
+        order: 2,
+      }),
+    )
+    applyEvent(
+      s,
+      ev('milestone.create', newId('mst'), {
+        projectId: prj,
+        label: 'M',
+        status: 'next',
+        order: 0,
+      }),
+    )
     const dl = deliverablesForProject(s, prj)
     expect(dl.map((d) => d.kind)).toEqual(['reference', 'due', 'delivered'])
     expect(dl[1]?.dueDate).toBe('2026-08-01')
@@ -55,8 +99,24 @@ describe('reducer', () => {
     const s = emptyState()
     const prj = newId('prj')
     applyEvent(s, ev('project.create', prj, { name: 'P' }))
-    applyEvent(s, ev('deliverable.create', newId('dlv'), { projectId: prj, label: 'old-done', done: true, order: 0 }))
-    applyEvent(s, ev('deliverable.create', newId('dlv'), { projectId: prj, label: 'old-due', due: true, order: 1 }))
+    applyEvent(
+      s,
+      ev('deliverable.create', newId('dlv'), {
+        projectId: prj,
+        label: 'old-done',
+        done: true,
+        order: 0,
+      }),
+    )
+    applyEvent(
+      s,
+      ev('deliverable.create', newId('dlv'), {
+        projectId: prj,
+        label: 'old-due',
+        due: true,
+        order: 1,
+      }),
+    )
     const dl = deliverablesForProject(s, prj)
     expect(dl.map((d) => d.kind)).toEqual(['delivered', 'due'])
   })
@@ -82,8 +142,20 @@ describe('lineage derived from @mentions in context', () => {
     const tide = newId('prj')
     const beacon = newId('prj')
     applyEvent(s, ev('project.create', drift, { name: 'Driftwood', context: 'the groundwork.' }))
-    applyEvent(s, ev('project.create', tide, { name: 'Tidewater', context: `grew out of ${mentionToken(drift, 'Driftwood')}.` }))
-    applyEvent(s, ev('project.create', beacon, { name: 'Beacon', context: `reuses ${mentionToken(tide, 'Tidewater')} maps.` }))
+    applyEvent(
+      s,
+      ev('project.create', tide, {
+        name: 'Tidewater',
+        context: `grew out of ${mentionToken(drift, 'Driftwood')}.`,
+      }),
+    )
+    applyEvent(
+      s,
+      ev('project.create', beacon, {
+        name: 'Beacon',
+        context: `reuses ${mentionToken(tide, 'Tidewater')} maps.`,
+      }),
+    )
 
     expect(mentionsOf(s, tide)).toEqual([drift]) // Tidewater builds on Driftwood
     expect(mentionsOf(s, drift)).toEqual([]) // root
@@ -98,7 +170,13 @@ describe('lineage derived from @mentions in context', () => {
     const s = emptyState()
     const a = newId('prj')
     const ghost = newId('prj')
-    applyEvent(s, ev('project.create', a, { name: 'A', context: `${mentionToken(a, 'A')} and ${mentionToken(ghost, 'Ghost')}` }))
+    applyEvent(
+      s,
+      ev('project.create', a, {
+        name: 'A',
+        context: `${mentionToken(a, 'A')} and ${mentionToken(ghost, 'Ghost')}`,
+      }),
+    )
     expect(mentionsOf(s, a)).toEqual([])
     expect(graphEdges(s)).toEqual([])
   })
@@ -109,7 +187,12 @@ describe('log fold round-trips serialized events', () => {
     const s = emptyState()
     const prj = newId('prj')
     const content =
-      [serializeEvent(ev('project.create', prj, { name: 'X' })), serializeEvent(ev('log.create', newId('log'), { projectId: prj, title: 'hi', source: 'agent' }))].join('\n') + '\n'
+      [
+        serializeEvent(ev('project.create', prj, { name: 'X' })),
+        serializeEvent(
+          ev('log.create', newId('log'), { projectId: prj, title: 'hi', source: 'agent' }),
+        ),
+      ].join('\n') + '\n'
     foldFrom(s, content, 0)
     expect(s.entities[prj]?.fields.name).toBe('X')
     expect(Object.keys(s.logEntries).length).toBe(1)

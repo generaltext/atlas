@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useStore } from '../lib/store'
-import { entitiesOfKind, fieldStr, refName } from '../lib/reducer'
-import { KINDS, type EntityKind } from '../lib/model'
+
 import { newId } from '../lib/ids'
+import { KINDS, type EntityKind } from '../lib/model'
+import { entitiesOfKind, fieldStr, refName } from '../lib/reducer'
+import { useStore } from '../lib/store'
 import { Icon } from './Icon'
 
 /** Inline ref picker with autocomplete + a "Create …" option when nothing matches.
@@ -31,7 +32,7 @@ export function RefCombobox({
           setEditing(true)
           setQ('')
         }}
-        className={`rounded px-1 -mx-1 text-left hover:bg-[var(--hover)] ${current ? '' : 'italic text-[var(--faint)]'}`}
+        className={`-mx-1 rounded px-1 text-left hover:bg-[var(--hover)] ${current ? '' : 'text-[var(--faint)] italic'}`}
       >
         {current || placeholder}
       </button>
@@ -74,7 +75,7 @@ export function RefCombobox({
         }}
         className="w-48 rounded-md border border-[var(--accent)] bg-[var(--bg)] px-2 py-1 text-[14px] outline-none"
       />
-      <ul className="absolute left-0 top-full z-50 mt-1 max-h-60 w-56 overflow-auto rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
+      <ul className="absolute top-full left-0 z-50 mt-1 max-h-60 w-56 overflow-auto rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
         {matches.map((m) => (
           <li key={m.id}>
             <button

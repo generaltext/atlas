@@ -1,14 +1,9 @@
-import { useStore } from '../lib/store'
-import {
-  STATUS_COLORS,
-  statusOptions,
-  type Config,
-  type StatusDef,
-} from '../lib/model'
-import { newId } from '../lib/ids'
 import { Card, SectionHead } from '../components/common'
-import { ConfirmDelete, EditableSelect, EditableText } from '../components/ui'
 import { Icon } from '../components/Icon'
+import { ConfirmDelete, EditableSelect, EditableText } from '../components/ui'
+import { newId } from '../lib/ids'
+import { STATUS_COLORS, statusOptions, type Config, type StatusDef } from '../lib/model'
+import { useStore } from '../lib/store'
 
 export function SettingsPage() {
   const { config, saveConfig } = useStore()
@@ -17,12 +12,16 @@ export function SettingsPage() {
   const setStatus = (i: number, patch: Partial<StatusDef>) =>
     update({ statuses: config.statuses.map((s, j) => (j === i ? { ...s, ...patch } : s)) })
   const addStatus = () =>
-    update({ statuses: [...config.statuses, { key: newId('st'), label: 'New status', color: 'grey' }] })
+    update({
+      statuses: [...config.statuses, { key: newId('st'), label: 'New status', color: 'grey' }],
+    })
   const removeStatus = (i: number) => {
     const removed = config.statuses[i]
     const statuses = config.statuses.filter((_, j) => j !== i)
     const defaultStatus =
-      removed && config.defaultStatus === removed.key ? (statuses[0]?.key ?? '') : config.defaultStatus
+      removed && config.defaultStatus === removed.key
+        ? (statuses[0]?.key ?? '')
+        : config.defaultStatus
     update({ statuses, defaultStatus })
   }
 
@@ -37,7 +36,10 @@ export function SettingsPage() {
         <SectionHead title="Project statuses" note="name + color" />
         <ul className="mb-3 flex flex-col">
           {config.statuses.map((s, i) => (
-            <li key={s.key} className="flex items-center gap-3 border-t border-[var(--border)] py-2.5 first:border-t-0">
+            <li
+              key={s.key}
+              className="flex items-center gap-3 border-t border-[var(--border)] py-2.5 first:border-t-0"
+            >
               <div className="flex shrink-0 items-center gap-1.5">
                 {STATUS_COLORS.map((c) => (
                   <button
@@ -50,7 +52,9 @@ export function SettingsPage() {
                     style={{
                       background: `var(${c.var})`,
                       boxShadow:
-                        s.color === c.key ? `0 0 0 2px var(--panel), 0 0 0 3.5px var(${c.var})` : 'none',
+                        s.color === c.key
+                          ? `0 0 0 2px var(--panel), 0 0 0 3.5px var(${c.var})`
+                          : 'none',
                     }}
                   />
                 ))}

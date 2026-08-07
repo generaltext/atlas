@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { KINDS, type EntityKind } from '../lib/model'
+
 import { newId } from '../lib/ids'
+import { KINDS, type EntityKind } from '../lib/model'
+import { useStore } from '../lib/store'
 
 /** Create an entity with sensible defaults and navigate to its detail page. */
 export function useCreate() {

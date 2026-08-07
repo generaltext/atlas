@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { fieldStr, refName, type EntityRecord } from '../lib/reducer'
+
 import { statusColorVarName, statusLabel } from '../lib/model'
+import { fieldStr, refName, type EntityRecord } from '../lib/reducer'
+import { useStore } from '../lib/store'
 
 /** A project in the always-visible list. One status cue — a quiet word in the
  *  subline — so the title gets the full width. Highlights when it's the one being
@@ -23,14 +24,14 @@ export function ProjectCard({ project }: { project: EntityRecord }) {
         }`
       }
     >
-      <div className="text-pretty text-[14px] font-semibold leading-snug">
+      <div className="text-[14px] leading-snug font-semibold text-pretty">
         {fieldStr(project, 'name') || 'Untitled'}
       </div>
       <div className="mt-0.5 flex items-baseline gap-2 text-[12px] text-[var(--muted)]">
         <span className="min-w-0 flex-1 truncate">{client ? `for ${client}` : 'no client'}</span>
         {status && (
           <span
-            className="shrink-0 font-mono-x text-[10px] uppercase tracking-[0.06em]"
+            className="font-mono-x shrink-0 text-[10px] tracking-[0.06em] uppercase"
             style={{ color: `var(${statusColorVarName(config, status)})` }}
           >
             {statusLabel(config, status)}

@@ -1,12 +1,12 @@
 {
   "name": "atlas",
-  "private": true,
   "version": "0.3.0",
-  "type": "module",
-  "description": "Portfolio, lineage, and shared living reports \u2014 a General Text app.",
-  "license": "MIT",
+  "private": true,
+  "description": "Portfolio, lineage, and shared living reports — a General Text app.",
   "homepage": "https://www.generaltext.org",
+  "license": "MIT",
   "repository": "https://github.com/generaltext/atlas",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

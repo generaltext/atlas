@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Icon } from './Icon'
+
 import type { SelectOption } from '../lib/model'
+import { Icon } from './Icon'
 
 // The gt app sandbox has no window.confirm/prompt/alert, so all input and
 // confirmation is built in-app.
@@ -61,7 +62,7 @@ export function TextInput({
 export function Labeled({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono-x text-[10.5px] uppercase tracking-wider text-[var(--faint)]">
+      <span className="font-mono-x text-[10.5px] tracking-wider text-[var(--faint)] uppercase">
         {label}
       </span>
       {children}
@@ -85,7 +86,11 @@ export function Button({
       ? 'bg-[var(--accent)] text-white hover:opacity-90'
       : 'border border-[var(--border)] bg-[var(--panel)] text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--accent)]'
   return (
-    <button type={type} onClick={onClick} className={`rounded-lg px-3.5 py-2 text-[13px] font-medium transition ${cls}`}>
+    <button
+      type={type}
+      onClick={onClick}
+      className={`rounded-lg px-3.5 py-2 text-[13px] font-medium transition ${cls}`}
+    >
       {children}
     </button>
   )
@@ -199,7 +204,7 @@ export function EditableText({
       onKeyDown={(e) => {
         if (e.key === 'Enter') setEditing(true)
       }}
-      className={`cursor-text rounded px-1 -mx-1 hover:bg-[var(--hover)] ${!value ? 'text-[var(--faint)] italic' : ''} ${className}`}
+      className={`-mx-1 cursor-text rounded px-1 hover:bg-[var(--hover)] ${!value ? 'text-[var(--faint)] italic' : ''} ${className}`}
     >
       {value || placeholder}
     </span>
@@ -227,13 +232,13 @@ export function EditableSelect({
         type="button"
         onClick={() => setOpen((o) => !o)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-[13px] outline-none transition hover:border-[var(--marine-dim)]"
+        className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-[13px] transition outline-none hover:border-[var(--marine-dim)]"
       >
         <span className={current ? '' : 'text-[var(--faint)]'}>{current ?? placeholder}</span>
         <Icon name="ChevronDown" size={12} className="opacity-60" />
       </button>
       {open && (
-        <ul className="absolute left-0 top-full z-50 mt-1 max-h-60 min-w-full overflow-auto rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
+        <ul className="absolute top-full left-0 z-50 mt-1 max-h-60 min-w-full overflow-auto rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
           {options.map((o) => (
             <li key={o.key}>
               <button
@@ -243,7 +248,7 @@ export function EditableSelect({
                   onSave(o.key)
                   setOpen(false)
                 }}
-                className={`block w-full whitespace-nowrap px-3 py-1.5 text-left text-[13px] hover:bg-[var(--hover)] ${
+                className={`block w-full px-3 py-1.5 text-left text-[13px] whitespace-nowrap hover:bg-[var(--hover)] ${
                   o.key === value ? 'font-medium text-[var(--fg)]' : 'text-[var(--muted)]'
                 }`}
               >
@@ -263,9 +268,15 @@ export function VisibilityToggle({ on, onToggle }: { on: boolean; onToggle: () =
     <button
       type="button"
       onClick={onToggle}
-      title={on ? 'Shared with client — click to make private' : 'Private — click to share on the client report'}
-      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono-x text-[10px] transition ${
-        on ? 'text-[var(--brass)] hover:bg-[var(--hover)]' : 'text-[var(--faint)] hover:bg-[var(--hover)]'
+      title={
+        on
+          ? 'Shared with client — click to make private'
+          : 'Private — click to share on the client report'
+      }
+      className={`font-mono-x inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] transition ${
+        on
+          ? 'text-[var(--brass)] hover:bg-[var(--hover)]'
+          : 'text-[var(--faint)] hover:bg-[var(--hover)]'
       }`}
     >
       <Icon name={on ? 'Eye' : 'Circle'} size={11} />
@@ -275,10 +286,21 @@ export function VisibilityToggle({ on, onToggle }: { on: boolean; onToggle: () =
 }
 
 /** Two-click delete (no native confirm in the sandbox). */
-export function ConfirmDelete({ onConfirm, title = 'Delete' }: { onConfirm: () => void; title?: string }) {
+export function ConfirmDelete({
+  onConfirm,
+  title = 'Delete',
+}: {
+  onConfirm: () => void
+  title?: string
+}) {
   const [armed, setArmed] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
   if (armed) {
     return (
       <button
@@ -287,7 +309,7 @@ export function ConfirmDelete({ onConfirm, title = 'Delete' }: { onConfirm: () =
           setArmed(false)
           onConfirm()
         }}
-        className="rounded-md px-1.5 py-0.5 font-mono-x text-[10px] text-[var(--crit)] hover:bg-[color-mix(in_srgb,var(--crit)_14%,transparent)]"
+        className="font-mono-x rounded-md px-1.5 py-0.5 text-[10px] text-[var(--crit)] hover:bg-[color-mix(in_srgb,var(--crit)_14%,transparent)]"
       >
         remove?
       </button>

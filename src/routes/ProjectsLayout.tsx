@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { entitiesOfKind, fieldStr, refName } from '../lib/reducer'
-import { ProjectCard } from '../components/ProjectCard'
-import { useCreate } from '../components/useCreate'
+
 import { Icon } from '../components/Icon'
+import { ProjectCard } from '../components/ProjectCard'
 import { EditableSelect } from '../components/ui'
+import { useCreate } from '../components/useCreate'
+import { entitiesOfKind, fieldStr, refName } from '../lib/reducer'
+import { useStore } from '../lib/store'
 
 type Sort = 'created-desc' | 'created-asc' | 'name' | 'updated'
 const SORTS: { key: Sort; label: string }[] = [
@@ -23,7 +24,8 @@ export function ProjectsLayout() {
   const create = useCreate()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<Sort>(() => {
-    const s = typeof localStorage !== 'undefined' ? localStorage.getItem('atlas.projects.sort') : null
+    const s =
+      typeof localStorage !== 'undefined' ? localStorage.getItem('atlas.projects.sort') : null
     return s === 'created-asc' || s === 'name' || s === 'updated' ? s : 'created-desc'
   })
   const changeSort = (s: Sort) => {
@@ -38,7 +40,11 @@ export function ProjectsLayout() {
   const projects = entitiesOfKind(state, 'project')
   // "Newest"/"Oldest" go by the project's SET start date (ISO, sorts lexically);
   // projects with no date fall back to record-created order, and sink below dated ones.
-  const byStart = (a: (typeof projects)[number], b: (typeof projects)[number], newestFirst: boolean) => {
+  const byStart = (
+    a: (typeof projects)[number],
+    b: (typeof projects)[number],
+    newestFirst: boolean,
+  ) => {
     const as = fieldStr(a, 'start')
     const bs = fieldStr(b, 'start')
     if (as && bs && as !== bs) return (as < bs ? 1 : -1) * (newestFirst ? 1 : -1)
@@ -83,13 +89,13 @@ export function ProjectsLayout() {
             <Icon
               name="Search"
               size={13}
-              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--faint)]"
+              className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-[var(--faint)]"
             />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Filter…"
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1.5 pl-7 pr-2 text-[13px] outline-none focus:border-[var(--accent)]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1.5 pr-2 pl-7 text-[13px] outline-none focus:border-[var(--accent)]"
             />
           </div>
         </div>

@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { useStore } from '../lib/store'
+
 import { newId } from '../lib/ids'
+import { DELIVERABLE_KINDS, deliverableKindDef, type DeliverableKind } from '../lib/model'
 import {
   deliverablesForProject,
   logForProject,
   milestonesForProject,
   type Deliverable,
 } from '../lib/reducer'
-import { DELIVERABLE_KINDS, deliverableKindDef, type DeliverableKind } from '../lib/model'
+import { useStore } from '../lib/store'
 import { Icon } from './Icon'
 import { MentionText } from './MentionText'
 import { Button, ConfirmDelete, EditableText, Labeled, Modal, TextInput } from './ui'
@@ -45,7 +46,7 @@ function KindMarker({ kind, onPick }: { kind: string; onPick: (k: DeliverableKin
         <span className="h-3 w-3 rounded-full" style={{ background: `var(${def.colorVar})` }} />
       </button>
       {open && (
-        <ul className="absolute left-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
+        <ul className="absolute top-full left-0 z-50 mt-1 w-40 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
           {DELIVERABLE_KINDS.map((k) => (
             <li key={k.key}>
               <button
@@ -57,7 +58,10 @@ function KindMarker({ kind, onPick }: { kind: string; onPick: (k: DeliverableKin
                 }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-[var(--hover)]"
               >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: `var(${k.colorVar})` }} />
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: `var(${k.colorVar})` }}
+                />
                 {k.label}
               </button>
             </li>
@@ -92,7 +96,9 @@ function DeliverableRow({ d }: { d: Deliverable }) {
           placeholder="Label"
         />
         <span className="shrink-0 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-          <ConfirmDelete onConfirm={() => dispatch({ type: 'deliverable.archive', subject: d.id })} />
+          <ConfirmDelete
+            onConfirm={() => dispatch({ type: 'deliverable.archive', subject: d.id })}
+          />
         </span>
       </div>
       {/* line 2 (indented under the title): link + its open button, date at the right */}
@@ -100,7 +106,7 @@ function DeliverableRow({ d }: { d: Deliverable }) {
         <EditableText
           value={d.url}
           onSave={(v) => upd({ url: v })}
-          className="min-w-0 truncate font-mono-x text-[var(--faint)]"
+          className="font-mono-x min-w-0 truncate text-[var(--faint)]"
           placeholder="add link"
           type="url"
         />
@@ -123,7 +129,7 @@ function DeliverableRow({ d }: { d: Deliverable }) {
             <EditableText
               value={dateVal}
               onSave={(v) => upd(d.kind === 'due' ? { dueDate: v } : { deliveredDate: v })}
-              className="whitespace-nowrap font-mono-x text-[10.5px]"
+              className="font-mono-x text-[10.5px] whitespace-nowrap"
               placeholder="date"
               type="date"
             />
@@ -173,10 +179,20 @@ export function DeliverablesEditor({ projectId }: { projectId: string }) {
       <Modal open={open} onClose={() => setOpen(false)} title="Add a deliverable">
         <div className="flex flex-col gap-3">
           <Labeled label="Label">
-            <TextInput value={form.label} onChange={(v) => setForm({ ...form, label: v })} placeholder="e.g. GitHub repo, or “Story-map builder”" autoFocus />
+            <TextInput
+              value={form.label}
+              onChange={(v) => setForm({ ...form, label: v })}
+              placeholder="e.g. GitHub repo, or “Story-map builder”"
+              autoFocus
+            />
           </Labeled>
           <Labeled label="Link (optional)">
-            <TextInput value={form.url} onChange={(v) => setForm({ ...form, url: v })} placeholder="https://" type="url" />
+            <TextInput
+              value={form.url}
+              onChange={(v) => setForm({ ...form, url: v })}
+              placeholder="https://"
+              type="url"
+            />
           </Labeled>
           <Labeled label="Type">
             <div className="flex gap-1.5">
@@ -191,14 +207,19 @@ export function DeliverablesEditor({ projectId }: { projectId: string }) {
                       : 'border-[var(--border)] text-[var(--muted)] hover:bg-[var(--hover)]'
                   }`}
                 >
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: `var(${k.colorVar})` }} />
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ background: `var(${k.colorVar})` }}
+                  />
                   {k.label}
                 </button>
               ))}
             </div>
           </Labeled>
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={save}>Add</Button>
           </div>
         </div>
@@ -225,46 +246,71 @@ export function MilestonesEditor({ projectId }: { projectId: string }) {
       {rows.length > 0 && (
         <ol className="mb-2 flex flex-col">
           {rows.map((m) => {
-            const dot = m.status === 'done' ? 'var(--good)' : m.status === 'next' ? 'var(--accent)' : 'var(--faint)'
+            const dot =
+              m.status === 'done'
+                ? 'var(--good)'
+                : m.status === 'next'
+                  ? 'var(--accent)'
+                  : 'var(--faint)'
             const stLabel = m.status === 'done' ? 'Done' : m.status === 'next' ? 'Next' : 'To do'
             const stTone = m.status === 'done' ? 'good' : m.status === 'next' ? 'info' : 'muted'
             const stNext = m.status === 'todo' ? 'next' : m.status === 'next' ? 'done' : 'todo'
             return (
-              <li key={m.id} className="group flex gap-2.5 border-t border-[var(--border)] py-2 first:border-t-0">
+              <li
+                key={m.id}
+                className="group flex gap-2.5 border-t border-[var(--border)] py-2 first:border-t-0"
+              >
                 <span
                   className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full border-2"
-                  style={{ background: m.status === 'done' ? dot : 'var(--panel)', borderColor: dot }}
+                  style={{
+                    background: m.status === 'done' ? dot : 'var(--panel)',
+                    borderColor: dot,
+                  }}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2.5">
                     <EditableText
                       value={m.when}
-                      onSave={(v) => dispatch({ type: 'milestone.update', subject: m.id, data: { when: v } })}
-                      className="w-20 shrink-0 font-mono-x text-[11px] text-[var(--faint)]"
+                      onSave={(v) =>
+                        dispatch({ type: 'milestone.update', subject: m.id, data: { when: v } })
+                      }
+                      className="font-mono-x w-20 shrink-0 text-[11px] text-[var(--faint)]"
                       placeholder="when"
                     />
                     <EditableText
                       value={m.label}
-                      onSave={(v) => dispatch({ type: 'milestone.update', subject: m.id, data: { label: v } })}
+                      onSave={(v) =>
+                        dispatch({ type: 'milestone.update', subject: m.id, data: { label: v } })
+                      }
                       className="min-w-0 flex-1 truncate text-[14px] font-medium"
                       placeholder="Milestone"
                     />
                     <button
                       type="button"
                       title="Click to change status"
-                      onClick={() => dispatch({ type: 'milestone.update', subject: m.id, data: { status: stNext } })}
+                      onClick={() =>
+                        dispatch({
+                          type: 'milestone.update',
+                          subject: m.id,
+                          data: { status: stNext },
+                        })
+                      }
                       className={`pill tone-${stTone} shrink-0`}
                     >
                       <span className="tick" />
                       {stLabel}
                     </button>
                     <span className="shrink-0 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-                      <ConfirmDelete onConfirm={() => dispatch({ type: 'milestone.archive', subject: m.id })} />
+                      <ConfirmDelete
+                        onConfirm={() => dispatch({ type: 'milestone.archive', subject: m.id })}
+                      />
                     </span>
                   </div>
                   <EditableText
                     value={m.desc}
-                    onSave={(v) => dispatch({ type: 'milestone.update', subject: m.id, data: { desc: v } })}
+                    onSave={(v) =>
+                      dispatch({ type: 'milestone.update', subject: m.id, data: { desc: v } })
+                    }
                     className="mt-0.5 block text-[12.5px] text-[var(--muted)]"
                     placeholder="Add a note"
                   />
@@ -309,16 +355,25 @@ export function LogEditor({ projectId }: { projectId: string }) {
       {rows.length > 0 && (
         <div className="mb-2 flex flex-col">
           {rows.map((l) => (
-            <div key={l.id} className="grid grid-cols-[auto_1fr_auto] items-start gap-3 border-t border-[var(--border)] py-3 first:border-t-0">
-              <div className="whitespace-nowrap pt-0.5 text-right font-mono-x text-[11px] text-[var(--faint)]">{l.at}</div>
+            <div
+              key={l.id}
+              className="grid grid-cols-[auto_1fr_auto] items-start gap-3 border-t border-[var(--border)] py-3 first:border-t-0"
+            >
+              <div className="font-mono-x pt-0.5 text-right text-[11px] whitespace-nowrap text-[var(--faint)]">
+                {l.at}
+              </div>
               <div className="min-w-0">
                 <EditableText
                   value={l.title}
-                  onSave={(v) => dispatch({ type: 'log.update', subject: l.id, data: { title: v } })}
+                  onSave={(v) =>
+                    dispatch({ type: 'log.update', subject: l.id, data: { title: v } })
+                  }
                   className="text-[14px] font-medium"
                 />
-                {l.body && <MentionText body={l.body} className="mt-0.5 text-[13px] text-[var(--muted)]" />}
-                <div className="mt-1 font-mono-x text-[10.5px] uppercase tracking-wider text-[var(--faint)]">
+                {l.body && (
+                  <MentionText body={l.body} className="mt-0.5 text-[13px] text-[var(--muted)]" />
+                )}
+                <div className="font-mono-x mt-1 text-[10.5px] tracking-wider text-[var(--faint)] uppercase">
                   {l.source === 'agent' ? '◆ agent' : 'manual'}
                 </div>
               </div>
@@ -331,7 +386,12 @@ export function LogEditor({ projectId }: { projectId: string }) {
       <Modal open={open} onClose={() => setOpen(false)} title="Add an update">
         <div className="flex flex-col gap-3">
           <Labeled label="Title">
-            <TextInput value={form.title} onChange={(v) => setForm({ ...form, title: v })} placeholder="What happened" autoFocus />
+            <TextInput
+              value={form.title}
+              onChange={(v) => setForm({ ...form, title: v })}
+              placeholder="What happened"
+              autoFocus
+            />
           </Labeled>
           <Labeled label="Details (optional)">
             <textarea
@@ -345,7 +405,9 @@ export function LogEditor({ projectId }: { projectId: string }) {
             <TextInput value={form.at} onChange={(v) => setForm({ ...form, at: v })} type="date" />
           </Labeled>
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={save}>Add</Button>
           </div>
         </div>

@@ -31,7 +31,11 @@ export function parseBody(body: string): Segment[] {
 }
 
 export function mentionToken(id: string, label: string): string {
-  const clean = label.replace(/[[\]\n]/g, ' ').replace(/\s+/g, ' ').trim() || id
+  const clean =
+    label
+      .replace(/[[\]\n]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim() || id
   return `@[${clean}](${id})`
 }
 

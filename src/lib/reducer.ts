@@ -6,9 +6,9 @@
 // `context` field (see graphEdges / mentionsOf / mentionedBy at the bottom).
 
 import type { Actor, AtlasEvent } from './events'
+import { mentionedIds } from './mentions'
 import type { EntityKind, MilestoneStatus, LogSource, DeliverableKind } from './model'
 import { kindOfId } from './model'
-import { mentionedIds } from './mentions'
 
 export interface EntityRecord {
   id: string
@@ -296,12 +296,7 @@ function applyMilestone(
 
 // ── update-log entries ────────────────────────────────────────────────────────
 
-function applyLog(
-  state: State,
-  ev: AtlasEvent,
-  verb: string,
-  data: Record<string, unknown>,
-): void {
+function applyLog(state: State, ev: AtlasEvent, verb: string, data: Record<string, unknown>): void {
   if (verb === 'create') {
     if (state.logEntries[ev.subject]) return
     const source = asString(data.source)

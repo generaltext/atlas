@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { useStore } from './lib/store'
+
+import { AtlasMark } from './components/AtlasMark'
 import { Layout } from './components/Layout'
 import { AppSkeleton } from './components/Skeleton'
-import { ProjectsLayout } from './routes/ProjectsLayout'
-import { ProjectDetail } from './routes/ProjectDetail'
-import { EntityListPage } from './routes/EntityListPage'
+import { useStore } from './lib/store'
 import { EntityDetail } from './routes/EntityDetail'
+import { EntityListPage } from './routes/EntityListPage'
 import { GraphPage } from './routes/GraphPage'
+import { ProjectDetail } from './routes/ProjectDetail'
+import { ProjectsLayout } from './routes/ProjectsLayout'
 import { SettingsPage } from './routes/SettingsPage'
-import { AtlasMark } from './components/AtlasMark'
 
 /** Centered single-column page body for the non-Projects tabs. */
 function Page({ children }: { children: ReactNode }) {
@@ -29,11 +30,46 @@ export function App() {
           <Route path="/p/:id" element={<ProjectDetail />} />
         </Route>
         {/* other tabs: ordinary single-column pages */}
-        <Route path="/graph" element={<Page><GraphPage /></Page>} />
-        <Route path="/clients" element={<Page><EntityListPage kind="client" /></Page>} />
-        <Route path="/contacts" element={<Page><EntityListPage kind="contact" /></Page>} />
-        <Route path="/e/:id" element={<Page><EntityDetail /></Page>} />
-        <Route path="/settings" element={<Page><SettingsPage /></Page>} />
+        <Route
+          path="/graph"
+          element={
+            <Page>
+              <GraphPage />
+            </Page>
+          }
+        />
+        <Route
+          path="/clients"
+          element={
+            <Page>
+              <EntityListPage kind="client" />
+            </Page>
+          }
+        />
+        <Route
+          path="/contacts"
+          element={
+            <Page>
+              <EntityListPage kind="contact" />
+            </Page>
+          }
+        />
+        <Route
+          path="/e/:id"
+          element={
+            <Page>
+              <EntityDetail />
+            </Page>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Page>
+              <SettingsPage />
+            </Page>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

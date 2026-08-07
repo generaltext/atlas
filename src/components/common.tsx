@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+
 import { type Config, statusColorVarName, statusLabel } from '../lib/model'
 import { Icon } from './Icon'
 
@@ -16,9 +17,7 @@ export function StatusPill({ statusKey, config }: { statusKey: string; config: C
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-lg border border-[var(--border)] bg-[var(--panel)] ${className}`}
-    >
+    <div className={`rounded-lg border border-[var(--border)] bg-[var(--panel)] ${className}`}>
       {children}
     </div>
   )
@@ -36,7 +35,8 @@ export function SectionHead({
   return (
     <div className="mb-2.5 flex items-center justify-between gap-3">
       <h3 className="text-[13px] font-semibold tracking-tight">{title}</h3>
-      {right ?? (note ? <span className="font-mono-x text-[11px] text-[var(--faint)]">{note}</span> : null)}
+      {right ??
+        (note ? <span className="font-mono-x text-[11px] text-[var(--faint)]">{note}</span> : null)}
     </div>
   )
 }
@@ -58,11 +58,13 @@ export function StatTile({
 }) {
   return (
     <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3.5 py-3">
-      <div className="font-mono-x text-[10.5px] uppercase tracking-wider text-[var(--faint)]">
+      <div className="font-mono-x text-[10.5px] tracking-wider text-[var(--faint)] uppercase">
         {label}
       </div>
-      <div className="mt-1 text-[19px] font-semibold tracking-tight tnum">{value}</div>
-      {sub != null && <div className="mt-0.5 font-mono-x text-[11px] text-[var(--faint)]">{sub}</div>}
+      <div className="tnum mt-1 text-[19px] font-semibold tracking-tight">{value}</div>
+      {sub != null && (
+        <div className="font-mono-x mt-0.5 text-[11px] text-[var(--faint)]">{sub}</div>
+      )}
       {bar != null && (
         <div className="bar mt-2.5">
           <i style={{ width: `${Math.max(0, Math.min(100, bar))}%` }} />

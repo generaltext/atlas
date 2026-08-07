@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import { statusColorVarName, statusLabel, type Config } from '../lib/model'
 import { Icon } from './Icon'
 
@@ -30,7 +31,7 @@ export function StatusControl({
         <Icon name="ChevronDown" size={11} className="opacity-60" />
       </button>
       {open && (
-        <ul className="absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
+        <ul className="absolute top-full left-0 z-50 mt-1 w-44 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
           {config.statuses.map((s) => (
             <li key={s.key}>
               <button

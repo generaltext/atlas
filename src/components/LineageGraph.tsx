@@ -145,7 +145,13 @@ export function LineageGraph({ nodes, edges, focusId, height = 300, onSelect }: 
         const p = norm.get(id) ?? [0.5, 0.5]
         return [single ? cssW / 2 : padX + p[0] * W, padY + p[1] * H]
       }
-      const C = { brass: cssv('--brass'), ink: cssv('--fg'), panel: cssv('--panel'), faint: cssv('--faint'), dim: cssv('--faint') }
+      const C = {
+        brass: cssv('--brass'),
+        ink: cssv('--fg'),
+        panel: cssv('--panel'),
+        faint: cssv('--faint'),
+        dim: cssv('--faint'),
+      }
       const serif = cssv('--serif')
       const mono = cssv('--mono')
 
@@ -214,11 +220,19 @@ export function LineageGraph({ nodes, edges, focusId, height = 300, onSelect }: 
         ctx.textBaseline = 'alphabetic'
         ctx.font = (isFocus ? '600 ' : '') + '12px ' + serif
         ctx.fillStyle = C.ink
-        ctx.fillText(fit(ctx, n.name, single ? maxLabelW * 2 : maxLabelW), lx, single ? y + r + 16 : y - 1)
+        ctx.fillText(
+          fit(ctx, n.name, single ? maxLabelW * 2 : maxLabelW),
+          lx,
+          single ? y + r + 16 : y - 1,
+        )
         if (n.subtitle) {
           ctx.font = '10px ' + mono
           ctx.fillStyle = C.faint
-          ctx.fillText(fit(ctx, n.subtitle, single ? maxLabelW * 2 : maxLabelW), lx, single ? y + r + 30 : y + 12)
+          ctx.fillText(
+            fit(ctx, n.subtitle, single ? maxLabelW * 2 : maxLabelW),
+            lx,
+            single ? y + r + 30 : y + 12,
+          )
         }
         hits.push({ id: n.id, x, y, r: r + 6 })
       }

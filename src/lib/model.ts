@@ -6,15 +6,7 @@
 
 export type EntityKind = 'project' | 'client' | 'contact'
 
-export type FieldType =
-  | 'text'
-  | 'rich'
-  | 'email'
-  | 'url'
-  | 'ref'
-  | 'date'
-  | 'select'
-  | 'mentions'
+export type FieldType = 'text' | 'rich' | 'email' | 'url' | 'ref' | 'date' | 'select' | 'mentions'
 
 export interface SelectOption {
   key: string

@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { entitiesOfKind, fieldStr, graphEdges, refName } from '../lib/reducer'
-import { statusColorVarName } from '../lib/model'
-import { LineageGraph } from '../components/LineageGraph'
+
 import { EmptyState } from '../components/common'
+import { LineageGraph } from '../components/LineageGraph'
+import { statusColorVarName } from '../lib/model'
+import { entitiesOfKind, fieldStr, graphEdges, refName } from '../lib/reducer'
+import { useStore } from '../lib/store'
 
 export function GraphPage() {
   const { state, config } = useStore()
@@ -32,7 +33,12 @@ export function GraphPage() {
         <EmptyState>No projects yet.</EmptyState>
       ) : (
         <div className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-4">
-          <LineageGraph nodes={nodes} edges={edges} height={440} onSelect={(id) => navigate(`/p/${id}`)} />
+          <LineageGraph
+            nodes={nodes}
+            edges={edges}
+            height={440}
+            onSelect={(id) => navigate(`/p/${id}`)}
+          />
         </div>
       )}
 
@@ -41,12 +47,21 @@ export function GraphPage() {
           <h3 className="mb-2 text-[13px] font-semibold">Connections</h3>
           <div className="rowlist">
             {edges.map((e) => (
-              <div key={`${e.from}-${e.to}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5 text-[14px]">
-                <button className="font-medium hover:text-[var(--accent)]" onClick={() => navigate(`/p/${e.from}`)}>
+              <div
+                key={`${e.from}-${e.to}`}
+                className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5 text-[14px]"
+              >
+                <button
+                  className="font-medium hover:text-[var(--accent)]"
+                  onClick={() => navigate(`/p/${e.from}`)}
+                >
                   {nameOf(e.from)}
                 </button>
                 <span className="font-mono-x text-[12px] text-[var(--brass)]">· builds on →</span>
-                <button className="font-medium hover:text-[var(--accent)]" onClick={() => navigate(`/p/${e.to}`)}>
+                <button
+                  className="font-medium hover:text-[var(--accent)]"
+                  onClick={() => navigate(`/p/${e.to}`)}
+                >
                   {nameOf(e.to)}
                 </button>
               </div>

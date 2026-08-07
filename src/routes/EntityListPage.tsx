@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { entitiesOfKind, fieldStr, projectsForClient } from '../lib/reducer'
-import { KINDS, type EntityKind } from '../lib/model'
-import { Icon } from '../components/Icon'
+
 import { EmptyState } from '../components/common'
+import { Icon } from '../components/Icon'
 import { Button } from '../components/ui'
 import { useCreate } from '../components/useCreate'
+import { KINDS, type EntityKind } from '../lib/model'
+import { entitiesOfKind, fieldStr, projectsForClient } from '../lib/reducer'
+import { useStore } from '../lib/store'
 
 export function EntityListPage({ kind }: { kind: Exclude<EntityKind, 'project'> }) {
   const { state } = useStore()
@@ -28,7 +29,8 @@ export function EntityListPage({ kind }: { kind: Exclude<EntityKind, 'project'> 
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{def.plural}</h1>
           <p className="mt-1 text-[var(--muted)]">
-            {rows.length} {rows.length === 1 ? def.singular.toLowerCase() : def.plural.toLowerCase()}.
+            {rows.length}{' '}
+            {rows.length === 1 ? def.singular.toLowerCase() : def.plural.toLowerCase()}.
           </p>
         </div>
         <Button onClick={() => create(kind)}>
@@ -42,10 +44,16 @@ export function EntityListPage({ kind }: { kind: Exclude<EntityKind, 'project'> 
       ) : (
         <div className="rowlist">
           {rows.map((r) => (
-            <Link key={r.id} to={`/e/${r.id}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--hover)]">
+            <Link
+              key={r.id}
+              to={`/e/${r.id}`}
+              className="flex items-center gap-3 px-4 py-3 transition hover:bg-[var(--hover)]"
+            >
               <Icon name={def.icon} size={16} className="shrink-0 text-[var(--faint)]" />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[14.5px] font-semibold">{fieldStr(r, 'name') || 'Untitled'}</div>
+                <div className="truncate text-[14.5px] font-semibold">
+                  {fieldStr(r, 'name') || 'Untitled'}
+                </div>
                 <div className="truncate text-[12.5px] text-[var(--muted)]">{secondary(r.id)}</div>
               </div>
             </Link>

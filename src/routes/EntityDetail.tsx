@@ -1,9 +1,10 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import { fieldStr, linkedOfKind, projectsForClient } from '../lib/reducer'
-import { KINDS, statusColorVarName, statusLabel, type FieldDef } from '../lib/model'
+
 import { Icon } from '../components/Icon'
 import { EditableText, ConfirmDelete } from '../components/ui'
+import { KINDS, statusColorVarName, statusLabel, type FieldDef } from '../lib/model'
+import { fieldStr, linkedOfKind, projectsForClient } from '../lib/reducer'
+import { useStore } from '../lib/store'
 
 export function EntityDetail() {
   const { id = '' } = useParams()
@@ -14,7 +15,10 @@ export function EntityDetail() {
   if (!rec || rec.kind === 'project') {
     return (
       <div className="text-[var(--muted)]">
-        Not found. <Link className="text-[var(--accent)]" to="/">Home</Link>
+        Not found.{' '}
+        <Link className="text-[var(--accent)]" to="/">
+          Home
+        </Link>
       </div>
     )
   }
@@ -32,7 +36,10 @@ export function EntityDetail() {
     <div className="flex flex-col gap-6">
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <button onClick={() => navigate(backTo)} className="inline-flex items-center gap-1 font-mono-x text-[12px] text-[var(--faint)] hover:text-[var(--fg)]">
+          <button
+            onClick={() => navigate(backTo)}
+            className="font-mono-x inline-flex items-center gap-1 text-[12px] text-[var(--faint)] hover:text-[var(--fg)]"
+          >
             <Icon name="ChevronLeft" size={14} /> {def.plural}
           </button>
           <ConfirmDelete
@@ -45,7 +52,11 @@ export function EntityDetail() {
         </div>
         <div className="eyebrow">{def.singular}</div>
         <h1 className="text-[26px] font-semibold tracking-tight">
-          <EditableText value={fieldStr(rec, titleKey)} onSave={(v) => upd(titleKey, v)} placeholder="Untitled" />
+          <EditableText
+            value={fieldStr(rec, titleKey)}
+            onSave={(v) => upd(titleKey, v)}
+            placeholder="Untitled"
+          />
         </h1>
       </div>
 
@@ -55,9 +66,15 @@ export function EntityDetail() {
             .filter((f) => !f.title)
             .map((f) => (
               <div key={f.key} className={f.type === 'rich' ? 'sm:col-span-2' : ''}>
-                <dt className="mb-1 font-mono-x text-[10.5px] uppercase tracking-wider text-[var(--faint)]">{f.label}</dt>
+                <dt className="font-mono-x mb-1 text-[10.5px] tracking-wider text-[var(--faint)] uppercase">
+                  {f.label}
+                </dt>
                 <dd className="text-[14px]">
-                  <FieldEditor field={f} value={fieldStr(rec, f.key)} onSave={(v) => upd(f.key, v)} />
+                  <FieldEditor
+                    field={f}
+                    value={fieldStr(rec, f.key)}
+                    onSave={(v) => upd(f.key, v)}
+                  />
                 </dd>
               </div>
             ))}
@@ -69,11 +86,17 @@ export function EntityDetail() {
           <h3 className="mb-2 text-[13px] font-semibold">Projects</h3>
           <div className="rowlist">
             {projects.map((p) => (
-              <Link key={p.id} to={`/p/${p.id}`} className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-[var(--hover)]">
-                <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{fieldStr(p, 'name')}</span>
+              <Link
+                key={p.id}
+                to={`/p/${p.id}`}
+                className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-[var(--hover)]"
+              >
+                <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+                  {fieldStr(p, 'name')}
+                </span>
                 {fieldStr(p, 'status') && (
                   <span
-                    className="shrink-0 font-mono-x text-[10px] uppercase tracking-[0.06em]"
+                    className="font-mono-x shrink-0 text-[10px] tracking-[0.06em] uppercase"
                     style={{ color: `var(${statusColorVarName(config, fieldStr(p, 'status'))})` }}
                   >
                     {statusLabel(config, fieldStr(p, 'status'))}
@@ -88,7 +111,15 @@ export function EntityDetail() {
   )
 }
 
-function FieldEditor({ field, value, onSave }: { field: FieldDef; value: string; onSave: (v: string) => void }) {
+function FieldEditor({
+  field,
+  value,
+  onSave,
+}: {
+  field: FieldDef
+  value: string
+  onSave: (v: string) => void
+}) {
   const inputType = field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'
   return (
     <EditableText
