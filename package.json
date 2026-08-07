@@ -1,9 +1,9 @@
 {
   "name": "atlas",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
-  "description": "Portfolio, lineage, and shared living reports — a General Text app.",
+  "description": "Portfolio, lineage, and shared living reports \u2014 a General Text app.",
   "license": "MIT",
   "homepage": "https://www.generaltext.org",
   "repository": "https://github.com/generaltext/atlas",
@@ -12,7 +12,10 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "oxlint .",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
@@ -26,6 +29,8 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "happy-dom": "^15.0.0",
+    "oxfmt": "latest",
+    "oxlint": "latest",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
